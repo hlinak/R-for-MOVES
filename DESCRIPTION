@@ -1,11 +1,11 @@
 Package: r4moves
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Creates an interface to fetch data from a MOVES database, create and update MOVES tables, and runs MOVES inline.
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Author: Joseph Jakuta
+Maintainer: Joseph Jakuta <hlinak@gmail.com>
+Description: 
+Description.
+License: Creative Commons: CC BY-SA
 Encoding: UTF-8
 LazyData: true
