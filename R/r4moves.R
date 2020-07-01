@@ -13,6 +13,7 @@
 #   Install Package:           'Ctrl + Shift + B'
 #   Check Package:             'Ctrl + Shift + E'
 #   Test Package:              'Ctrl + Shift + T'
+#   Document Package:          'Ctrl + Shift + D'
 
 if (!require(RMySQL)) install.packages('RMySQL')
 library(RMySQL)
@@ -20,31 +21,18 @@ library(RMySQL)
 if (!require(XML)) install.packages('XML')
 library(XML)
 
-noWeekDays <- function(a, b, weekend=c("Saturday", "Sunday")) {
-  possible_days <- seq(a, b, "days")
-  sum(!weekdays(possible_days) %in% weekend)
-}
-
-makeDBConnection <- function(user, password, host='localhost'){
-  return(RMySQL::dbConnect(RMySQL::MySQL(),
-                   user=user,
-                   password=password,
-                   host=host))
-}
-
-endDBConnection <- function(dbconn){
-  return(RMySQL::dbDisconnect(dbconn))
-}
+if (!require(dplyr)) install.packages('dplyr')
+library(dplyr)
 
 queryBuilder <- function (movesdb_name,
-                           countydb_name,
-                           unique_columns,
-                           table,
-                           join_tables = c(),
-                           join_columns = c(),
-                           double_join_tables_l = c(),
-                           double_join_tables_r = c(),
-                           double_join_columns = c()) {
+                          countydb_name,
+                          unique_columns,
+                          table,
+                          join_tables = c(),
+                          join_columns = c(),
+                          double_join_tables_l = c(),
+                          double_join_tables_r = c(),
+                          double_join_columns = c()) {
   query <- "select "
   for(c in unique_columns) { query <- paste(query, c, ", ", sep="") }
   for(j in join_tables) { query <- paste(query, j, ".* , ", sep="") }
@@ -63,6 +51,68 @@ queryBuilder <- function (movesdb_name,
   return(query)
 }
 
+#' noWeekDays
+#' @description Returns integer sum of number of weekdays in timespan from a to b
+#'
+#' @param sd start date (as.Date) of timespan
+#' @param ed end date (as.Date) of timespan
+#' @param weekend vector of text names of weekend days, defaults to c("Saturday", "Sunday")
+#'
+#' @return noWeekDays integer
+#' @export
+#'
+#' @examples
+#' noWeekDays(as.Date("1969-01-01", "2012-12-21"))
+#' noWeekDays(as.Date("2016-01-21", "2020-01-21", weekend=c("Sunday")))
+noWeekDays <- function(sd, ed, weekend=c("Saturday", "Sunday")) {
+  possible_days <- seq(sd, ed, "days")
+  sum(!weekdays(possible_days) %in% weekend)
+}
+
+#' makeDBConnection
+#' @description A wrapper for \code{RMySQL::dbConnect()}
+#'
+#' @param user mysql user name
+#' @param password mysql password
+#' @param host mysql host, default to localhost
+#'
+#' @return \code{RMySQL::dbConnect()}
+#' @export
+#'
+#' @examples
+#' makeDBConnection("mysql_user", "password12345")
+#' makeDBConnection("mysql_user", "password12345", host="168.1.1.1")
+makeDBConnection <- function(user, password, host='localhost'){
+  return(RMySQL::dbConnect(RMySQL::MySQL(),
+                   user=user,
+                   password=password,
+                   host=host))
+}
+
+#' endDBConnection
+#' @description A wrapper for \code{RMySQL::dbDisconnect()}
+#'
+#' @param dbconn
+#'
+#' @return BOOLEAN result of \code{RMySQL::dbDisconnect()}
+#' @export
+#'
+#' @examples
+#' endDBConnection(dbconn)
+endDBConnection <- function(dbconn){
+  return(RMySQL::dbDisconnect(dbconn))
+}
+
+#' readRunspec
+#' @description Reads in a runspec at the location provided into an \code{XML::xmlParse()} object.
+#'
+#' @param runspecLocation file path as string
+#'
+#' @return \code{XML::xmlParse()} of runSpec
+#' @export
+#'
+#' @examples
+#' readRunspec("C:\\Users\\LocalUser\\MOVESRuns\\moves_runspec.xml")
 readRunspec <- function(runspecLocation) {
   if(!file.exists(runspecLocation)) {
     stop(paste("There is no runspec file: ",runspecLocation, sep=""))
@@ -71,20 +121,70 @@ readRunspec <- function(runspecLocation) {
   return(XML::xmlParse(runspecLocation))
 }
 
+#' getRunspecAttr
+#' @description Gets an attibute in a runspec \code{XML::xmlParse()} object.
+#'
+#' @param runspec \code{XML::xmlParse()} object
+#' @param xpathsLocation string in the format of an XPath (https://way2tutorial.com/xml/xpath-expression.php)
+#' @param attribute the name of the attribute being found
+#'
+#' @return \code{XML::xpathSApply()} of attribute from runspec
+#' @export
+#'
+#' @examples
+#' getRunspecAttr(rs, "//scaleinputdatabase", "databasename")
 getRunspecAttr <- function(runspec, xpathsLocation, attribute) {
   return(XML::xpathSApply(runspec, xpathsLocation, XML::xmlGetAttr, attribute))
 }
 
+#' setRunspecAttr
+#' @description Sets an attibute in a runspec \code{XML::xmlParse()} object.
+#'
+#' @param runspec \code{XML::xmlParse()} object
+#' @param xpathsLocation string in the format of an XPath (https://way2tutorial.com/xml/xpath-expression.php)
+#' @param list vector containing attributes and the values the attributes should be set to
+#'
+#' @return
+#' @export
+#'
+#' @examples
+#' setRunspecAttr(rs, "//outputdatabase", c(databasename =  new_outputdb_name))
 setRunspecAttr <- function(runspec, xpathsLocation, list) {
   ns <- XML::getNodeSet(runspec, xpathsLocation)
   lapply(ns, function(n) { XML::xmlAttrs(n, append = FALSE) <- list})
 }
 
-createTempRunspec <- function(runspec, runspecLocation) {
+#' createRunspec
+#' @description Creates a MOVES runspect based on a runspec \code{XML::xmlParse()} object.
+#'
+#' @param runspec \code{XML::xmlParse()} object
+#' @param runspecLocation file path as string as location to save runspec
+#'
+#' @return file path as string as location to where runspec was saved
+#' @export
+#'
+#' @examples
+#' createRunspec(rs, "C:\\Users\\LocalUser\\MOVESRuns\\moves_runspec_copy.xml")
+createRunspec <- function(runspec, runspecLocation) {
   XML::saveXML(runspec, file=runspecLocation)
+  return(runspecLocation)
 }
 
-createTempBatchFile <- function(batchFileLocation, runspecLocations,movesLocation) {
+#' createBatchFile
+#' @description Creates a MOVES excutable batchfile that will run all runspecs provided.
+#'
+#' @param batchFileLocation file path as string as location to save batchfile
+#' @param runspecLocations vector of file paths as string as location to find runspecs
+#' @param movesLocation file path as string as location of MOVES executable installation
+#'
+#' @return file path as string as location to where batchfile was saved
+#' @export
+#'
+#' @examples
+#' createBatchFile("C:\\Users\\LocalUser\\MOVESRuns\\moves_batchfile.bat",
+#' c("C:\\Users\\LocalUser\\MOVESRuns\\moves_runspec_copy.xml"),
+#' "C:\\Users\\Public\\EPA\\MOVES\\MOVES2014b")
+createBatchFile <- function(batchFileLocation, runspecLocations, movesLocation) {
   command <- paste("@echo off",
                    "rem Script generated by the R for MOVES",
                    "rem -----------------------------------------------------------",
@@ -101,8 +201,19 @@ createTempBatchFile <- function(batchFileLocation, runspecLocations,movesLocatio
                      sep="\n")
   }
   writeLines(command, batchFileLocation)
+  return(batchFileLocation)
 }
 
+#' runMOVES
+#' @description Runs command line MOVES using the batchfile supplied.
+#'
+#' @param batchFileLocation
+#'
+#' @return results of command line MOVES run.
+#' @export
+#'
+#' @examples
+#' runMOVES("C:\\Users\\LocalUser\\MOVESRuns\\moves_batchfile.bat")
 runMOVES <- function(batchFileLocation) {
   if(!file.exists(batchFileLocation)) {
     stop(paste("There is no batchfile: ",batchFileLocation, sep=""))
@@ -111,17 +222,32 @@ runMOVES <- function(batchFileLocation) {
   system(batchFileLocation, intern=TRUE, ignore.stdout = FALSE, ignore.stderr = FALSE, show.output.on.console = TRUE)
 }
 
-createTempFilesAndRunMOVES <- function(runspecs, tempDirectory,movesLocation) {
+#' createTempFilesAndRunMOVES
+#' @description Wrapper function that creates temporary runspecs, creates a temporary batch file, runs command line MOVES, and then deletes the temporary files.
+#'
+#' @param runspecLocations vector of file paths as string as location to find runspecs
+#' @param tempDirectory file path as string to location to save temporary runspecs and batch file
+#' @param movesLocation file path as string as location of MOVES executable installation
+#'
+#' @return results of command line MOVES run.
+#' @export
+#'
+#' @examples
+#' createTempFilesAndRunMOVES(c(rs),
+#' c("C:\\Users\\LocalUser\\MOVESRuns\\"),
+#' "C:\\Users\\Public\\EPA\\MOVES\\MOVES2014b")
+createTempFilesAndRunMOVES <- function(runspecs, tempDirectory, movesLocation) {
   outputRunspecs <- c()
   for(r in runspecs) {
     outr <- paste(tempDirectory,getRunspecAttr(rs,"//outputdatabase", "databasename"),".mrs",sep="")
-    createTempRunspec(rs, outr)
+    createRunspec(rs, outr)
     outputRunspecs <- c(outputRunspecs, outr)
   }
   batchfile <- paste(tempDirectory,"r4moves.bat",sep="")
-  print(batchfile)
-  createTempBatchFile(batchfile,outputRunspecs,movesLocation)
-  runMOVES(batchfile)
+  createBatchFile(batchfile,outputRunspecs,movesLocation)
+  results <- runMOVES(batchfile)
+  unlink(paste(tempDirectory, "*"))
+  return(results)
 }
 
 processGetQuery <- function(dbconn, query) {
@@ -160,6 +286,18 @@ checkTable <- function(dbconn, db_name, table_name) {
   }
 }
 
+#' copyMOVESDatabase
+#' @description Copies an existing MOVES database to a new location.
+#'
+#' @param dbconn MySQL db connection
+#' @param db_from_name MySQL county database to be copied as string.
+#' @param db_to_name MySQL county database to be created as string.
+#'
+#' @return boolean if the database was successfully copied
+#' @export
+#'
+#' @examples
+#' copyMOVESDatabase(dbconn, countydb_name, new_countydb_name)
 copyMOVESDatabase <- function(dbconn, db_from_name, db_to_name) {
   if(databaseExists(dbconn, db_from_name)) {
     if(databaseExists(dbconn, db_to_name)) {
@@ -173,6 +311,7 @@ copyMOVESDatabase <- function(dbconn, db_from_name, db_to_name) {
         RMySQL::dbSendQuery(dbconn, paste("CREATE TABLE ",db_to_name,".",table_name," LIKE ",db_from_name,".",table_name, sep=""))
         RMySQL::dbSendQuery(dbconn, paste("INSERT INTO ",db_to_name,".",table_name," SELECT * FROM ",db_from_name,".",table_name, sep=""))
       }
+      return(TRUE)
     }
   } else {
     stop(paste("There is no database: ", db_from_name, sep=""))
@@ -180,6 +319,19 @@ copyMOVESDatabase <- function(dbconn, db_from_name, db_to_name) {
   }
 }
 
+#' replaceMOVESTable
+#' @description
+#'
+#' @param dbconn MySQL db connection
+#' @param db_name MySQL county database to be updated as string.
+#' @param table_name MySQL table to be updated as string.
+#' @param data Data from a MySQL query of a MOVES table.
+#'
+#' @return boolean if the database was successfully replaced
+#' @export
+#'
+#' @examples
+#' replaceMOVESTable(dbconn, new_countydb_name, "avgspeeddistribution", data)
 replaceMOVESTable <- function(dbconn, db_name, table_name, data) {
   if(databaseExists(dbconn, db_name)) {
     if(tableExists(dbconn, db_name, table_name)) {
@@ -195,6 +347,7 @@ replaceMOVESTable <- function(dbconn, db_name, table_name, data) {
       for(row in 1:nrow(data_only_needed_columns)) {
         RMySQL::dbSendQuery(dbconn, paste("INSERT INTO ",db_name,".",table_name," (",paste(cols,collapse=','),") VALUES ('",paste(data_only_needed_columns[row,cols],collapse="','"),"');",sep=""))
       }
+      return(TRUE)
     } else {
       stop(paste("There is no table:",db_name, ".", table_name, sep=""))
       return(FALSE)
@@ -205,6 +358,77 @@ replaceMOVESTable <- function(dbconn, db_name, table_name, data) {
   }
 }
 
+#' getMOVESInputTable
+#' @description Gets the results of a table in a MOVES database and all associated lookup tables.
+#'
+#' @param dbconn MySQL db connection
+#' @param movesdb_name MySQL default database to be updated as string
+#' @param countydb_name  MySQL county database to be updated as string
+#' @param table_name MySQL table to be updated as string
+#'
+#' @return Either a dataframe with the result from \code{RMySQL::dbSendQuery()} or FALSE
+#' @export
+#'
+#' @examples
+#' getMOVESInputTable(dbconn, movesdb_name, countydb_name, "averagespeeddistribution")
+#' getMOVESInputTable(dbconn, movesdb_name, countydb_name, "imcoverage")
+getMOVESInputTable <- function(dbconn, movesdb_name, countydb_name, table_name) {
+  return(case_when(table_name == "avft" ~ getAVFT(dbconn, movesdb_name, countydb_name),
+            table_name == "averagespeeddistribution" ~ getAverageSpeedDistribution(dbconn, movesdb_name, countydb_name),
+            table_name == "dayvmtfraction" ~ getDayVMTFraction(dbconn, movesdb_name, countydb_name),
+            table_name == "fuelformation" ~ getFuelFormulation(dbconn, movesdb_name, countydb_name),
+            table_name == "fuelsupply" ~ getFuelSupply(dbconn, movesdb_name, countydb_name),
+            table_name == "fuelusagefraction" ~ getFuelUsageFraction(dbconn, movesdb_name, countydb_name),
+            table_name == "hotelingactivitydistribution" ~ getHotellingActivityDistribution(dbconn, movesdb_name, countydb_name),
+            table_name == "hourvmtfraction" ~ getHourVMTFraction(dbconn, movesdb_name, countydb_name),
+            table_name == "hpmsvtypeyear" ~ getHPMSVtypeYear(dbconn, movesdb_name, countydb_name),
+            table_name == "imcoverage" ~ getIMCoverage(dbconn, movesdb_name, countydb_name),
+            table_name == "monthvmtfraction" ~ getMonthVMTFraction(dbconn, movesdb_name, countydb_name),
+            table_name == "onroadretrofit" ~ data <- getOnRoadRetrofit(dbconn, movesdb_name, countydb_name),
+            table_name == "opmodedistribution" ~ getOpModeDistribution(dbconn, movesdb_name, countydb_name),
+            table_name == "rodtypedistribution" ~ getRoadTypeDistribution(dbconn, movesdb_name, countydb_name),
+            table_name == "sourcetypeagedistribution" ~ getSourceTypeAgeDistribution(dbconn, movesdb_name, countydb_name),
+            table_name == "sourcetypedayvmt" ~ getSourceTypeDayVMT(dbconn, movesdb_name, countydb_name),
+            table_name == "sourcetypeyear" ~ getSourceTypeYear(dbconn, movesdb_name, countydb_name),
+            table_name == "sourcetypeyearvmt" ~ getSourceTypeYearVMT(dbconn, movesdb_name, countydb_name),
+            table_name == "startssourcetypefraction" ~ getStartsSourceTypeFraction(dbconn, movesdb_name, countydb_name),
+            TRUE ~ FALSE))
+}
+
+#' getMOVESOutputTable
+#' @description Gets the results of a table in a MOVES database and all associated lookup tables.
+#'
+#' @param dbconn MySQL db connection
+#' @param movesdb_name MySQL default database to be updated as string
+#' @param outputdb_name  MySQL output database to be updated as string
+#' @param table_name MySQL table to be updated as string
+#'
+#' @return Either a dataframe with the result from \code{RMySQL::dbSendQuery()} or FALSE
+#' @export
+#'
+#' @examples
+#' getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "movesoutput")
+#' getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "rateperdistance")
+getMOVESOutputTable <- function(dbconn, movesdb_name, outputdb_name, table_name) {
+  return(case_when(table_name == "activitytype" ~ getActivityType(dbconn, movesdb_name, outputdb_name),
+                   table_name == "baserateoutput" ~ getBaseRateOutput(dbconn, movesdb_name, outputdb_name),
+                   table_name == "baserateunits" ~ getBaseRateUnits(dbconn, movesdb_name, outputdb_name),
+                   table_name == "movesactivity" ~ getMOVESActivityOutput(dbconn, movesdb_name, outputdb_name),
+                   table_name == "moveserror" ~ getMOVESError(dbconn, movesdb_name, outputdb_name),
+                   table_name == "moveseventlog" ~ getMOVESEventLog(dbconn, movesdb_name, outputdb_name),
+                   table_name == "movesoutput" ~ getMOVESOutput(dbconn, movesdb_name, outputdb_name),
+                   table_name == "movesrun" ~ getMOVESRun(dbconn, movesdb_name, outputdb_name),
+                   table_name == "movestablesused" ~ getMOVESTablesUsed(dbconn, movesdb_name, outputdb_name),
+                   table_name == "movesworkersused" ~ getMOVESWorkersUsed(dbconn, movesdb_name, outputdb_name),
+                   table_name == "rateperdistance" ~ getRatePerDistance(dbconn, movesdb_name, outputdb_name),
+                   table_name == "rateperhour" ~ getRatePerHour(dbconn, movesdb_name, outputdb_name),
+                   table_name == "rateperprofile" ~ getRatePerProfile(dbconn, movesdb_name, outputdb_name),
+                   table_name == "rateperstart" ~ getRatePerStart(dbconn, movesdb_name, outputdb_name),
+                   table_name == "ratepervehicle" ~ getRatePerVehicle(dbconn, movesdb_name, outputdb_name),
+                   table_name == "startspervehicle" ~ getStartsPerVehicle(dbconn, movesdb_name, outputdb_name),
+                  TRUE ~ FALSE))
+}
+
 #county db tables
 getAVFT <- function(dbconn, movesdb_name, countydb_name) {
   if(!checkDatabase(dbconn, movesdb_name, countydb_name)) { return(FALSE) }
@@ -212,7 +436,7 @@ getAVFT <- function(dbconn, movesdb_name, countydb_name) {
   return(processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name, c("modelYearID", "fuelEngFraction"), "avft", c("enginetech","fueltype","sourceusetype"), c("engTechID","fuelTypeID","sourceTypeID"))))
 }
 
-getAverageSpeedBin <- function(dbconn, movesdb_name, countydb_name) {
+getAverageSpeedDistribution <- function(dbconn, movesdb_name, countydb_name) {
   if(!checkDatabase(dbconn, movesdb_name, countydb_name)) { return(FALSE) }
   if(!checkTable(dbconn, countydb_name,"avgspeeddistribution")) { return(FALSE) }
   return(processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("avgSpeedFraction"),"avgspeeddistribution",c("hourday","avgspeedbin","roadtype","sourceusetype"),c("hourDayID","avgSpeedBinID","roadTypeID","sourceTypeID"),c("hourday","sourceusetype"),c("dayofanyweek","hpmsvtype"),c("dayID","HPMSVtypeID"))))
@@ -430,4 +654,3 @@ getStartsPerVehicle <- function(dbconn, movesdb_name, outputdb_name) {
   if(!checkTable(dbconn, outputdb_name, "startspervehicle")) { return(FALSE) }
   return(processGetQuery(dbconn,queryBuilder(movesdb_name,outputdb_name,c("MOVESScenarioID","MOVESRunID","yearID","hourID","zoneID","SCC","modelYearID","startsPerVehicle"),"startspervehicle",c("monthofanyyear","dayofanyweek","sourceusetype","regulatoryclass","fueltype"),c("monthID","dayID","sourceTypeID","regClassID","fuelTypeID"),c("sourceusetype"),c("hpmsvtype"),c("HPMSVtypeID"))))
 }
-

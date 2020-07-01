@@ -1,10 +1,11 @@
 Package: r4moves
 Type: Package
-Title: Creates an interface to fetch data from a MOVES database, create and update MOVES tables, and runs MOVES inline.
+Title: R4MOVES
 Version: 0.1.0
-Author: Joseph Jakuta
+Author: Joseph Jakuta <hlinak@gmail.com>
 Maintainer: Joseph Jakuta <hlinak@gmail.com>
-Description: 
+Description: Creates an interface to fetch data from a EPA Mobile Vehicle Emissions Simulator (MOVES) database, create and update MOVES tables, and runs MOVES inline.  For more information on moves visit https://www.epa.gov/moves.
 License: Creative Commons: CC BY-SA
 Encoding: UTF-8
 LazyData: true
+RoxygenNote: 7.1.1
