@@ -24,6 +24,10 @@ library(XML)
 if (!require(dplyr)) install.packages('dplyr')
 library(dplyr)
 
+movesDBversions <- array(c(c("movesdb20161117", "movesdb20180517", "movesdb20181022"),
+                     c(FALSE, TRUE, FALSE)),
+                     c(3,2))
+
 queryBuilder <- function (movesdb_name,
                           countydb_name,
                           unique_columns,
@@ -256,6 +260,14 @@ processGetQuery <- function(dbconn, query) {
 }
 
 databaseExists <- function(dbconn, db_name) {
+  if(grepl("^movesdb", db_name)) {
+    warning <- "Database appears to be a MOVES database, but this database has not yet been implememented or tested in r4moves."
+    for(row in 1:nrow(movesDBversions)) {
+      if(movesDBversions[row, 1] == db_name) {
+        warning <- ifelse(movesDBversions[row, 2] == "TRUE", "", "Database is confirmed to be MOVES database, but this database has not yet been tested in r4moves.")
+      }
+    }
+  }
   return(nrow(RMySQL::fetch(RMySQL::dbSendQuery(dbconn, paste("SHOW DATABASES LIKE '",db_name,"';", sep="")),n=-1))>0)
 }
 
@@ -356,6 +368,24 @@ replaceMOVESTable <- function(dbconn, db_name, table_name, data) {
     stop(paste("There is no database:", db_name, sep=""))
     return(FALSE)
   }
+}
+
+#' getMOVESBaseTable
+#' @description Gets the results of a table in a MOVES database.
+#'
+#' @param dbconn MySQL db connection
+#' @param movesdb_name MySQL default database to be updated as string
+#' @param table_name MySQL table to be updated as string
+#'
+#' @return Either a dataframe with the result from \code{RMySQL::dbSendQuery()} or FALSE
+#' @export
+#'
+#' @examples
+#' getMOVESBaseTable(dbconn, movesdb_name, "sourceusetype")
+getMOVESBaseTable <- function(dbconn, movesdb_name, table_name) {
+  if(!checkDatabase(dbconn, movesdb_name, movesdb_name)) { return(FALSE) }
+  if(!checkTable(dbconn, movesdb_name, table_name)) { return(FALSE) }
+  return(processGetQuery(dbconn, queryBuilder(movesdb_name,movesdb_name, c("*"))))
 }
 
 #' getMOVESInputTable

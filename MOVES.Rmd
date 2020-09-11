@@ -1,0 +1,187 @@
+---
+title: "MOVES"
+author: "Joseph Jakuta"
+email: "joseph.jakuta@dc.gov"
+date: "5/21/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Overview
+
+The District is undertaking a MOVES excercise as part of planning work.  It will require multiple MOVES scenarios to be run.  To ease the proess and the replicability (and to improve my R skills) I wrote a MOVES package for R.  
+
+Is this perfect.  No.  Right now I would desribe it as dev.  But I have already put it to use and think having a few MOVES experts working on it together could get it to be something to contribute to the larger commmunity.
+
+What it does (so far):
+
+1. Reads in county data manager tables and joins them with applicable descriptive tables
+
+2. Reads in output tables and joins them with applicable descriptive tables 
+
+3. Create a county data manager table
+
+4. Replace a county data manager table
+
+5. Run MOVES inline after creation of RunSpec
+
+What it could do:
+
+1. Read in project level tables and join them with applicable descriptive tables
+
+2. Have standard QA plots
+
+3. Expand to be compatible with older versions of MOVES
+
+4. ?What else
+
+
+Now let's walk through a script.
+
+## Loading Libraries
+
+Note that this is set up so that the moves library itself calls the database library.  Theoretically MarieDB shoudl be easily swapped in to that library.
+
+```{r load_libraries, message=FALSE}
+library(r4moves)
+library(dplyr)
+library(ggplot2)
+```
+
+## Set Up DB Connections
+
+Here we are going to set all of the variables we are going to need and make a connection to the MOVES database:
+
+```{r db_connection}
+password <- 'K7j0Ret79TwUIjxZExbZ'
+movesdb_name <- 'movesdb20180517'
+countydb_name <- 'ozn_dc_2017_naaq_in'
+outputdb_name <- 'ozn_dc_2017_naaq_out'
+
+dbconn <- makeDBConnection(user = 'root', password=password)
+```
+
+## Get a Table
+
+Here is an example fecth of an input table:
+
+```{r getSpeedBin}
+data <- getAverageSpeedBin(dbconn, movesdb_name, countydb_name)
+print(head(data,5))
+```
+
+
+## DPLYR
+
+Then you can use DPLYR to make nice summaries:
+
+```{r dplyr}
+data_sub <- data %>%
+  filter(dayName == "Weekdays" & roadDesc == "Urban Restricted Access") %>%
+  select(avgSpeedFraction, avgSpeedBinID, avgBinSpeed,sourceTypeID, sourceTypeName, hourID) 
+
+
+data_sub <- data_sub %>%
+  group_by(avgSpeedBinID, avgBinSpeed, sourceTypeID, sourceTypeName) %>%
+  summarize(avgSpeedFraction = mean(avgSpeedFraction))  
+
+print(head(data_sub,5))
+```
+## GGPLOT 
+
+Then you can use GGPLOT to make nice QA graphs (though this is not that):
+
+```{r ggplot}
+plot <-  ggplot(data_sub, aes(avgBinSpeed, avgSpeedFraction, fill=sourceTypeName)) +
+  geom_point()
+plot
+```
+
+## Create New Test Database 
+
+You can then manipulate data to run scenarios:
+
+```{r testdb}
+data <- getIMCoverage(dbconn, movesdb_name, countydb_name)
+print(head(data,2))
+newdata <- data[]
+newdata$inspectFreq <- 1
+print(head(newdata,2))
+suffix <- "_scenario1"
+new_countydb_name <- paste(countydb_name, suffix, sep="")
+#copyMOVESDatabase(dbconn, countydb_name, new_countydb_name)
+replaceMOVESTable(dbconn,new_countydb_name, "imcoverage", newdata)
+
+```
+## Running MOVES - Set Some Variables 
+
+Now we are going to run MOVES.  You can start by setting some variables.  All are needed for option 1 for running MOVES, only the first two are needed for option 2.
+
+```{r runMOVES Vars}
+moves_location <- "C:\\Users\\Public\\EPA\\MOVES\\MOVES2014b"
+folder <- input_runspec <- "C:\\Users\\joseph.jakuta\\Desktop\\"
+input_runspec <- paste(folder, "test_runspec.xml", sep='')
+output_runspec <- paste(folder, "test_runspec_new.mrs", sep='')
+batchfile <- paste(folder, "test_batch.bat", sep='')
+
+```
+## Running MOVES - Maninpulate the RUNSPEC 
+
+These functions can get variables (except the description) and set variables (except the description) in the Runspec. These are
+
+```{r runSpec}
+rs <- readRunspec(input_runspec)
+getRunspecAttr(rs, "//scaleinputdatabase", "databasename")
+print(rs)
+setRunspecAttr(rs, "//outputdatabase", c(databasename =  new_countydb_name))
+print(rs)
+
+```
+## Running MOVES - Option 1
+
+Three funcitons are needed to run MOVES in the first fashion.  This is being discussed mostly to show its available.  I suggest using method 2.
+
+```{r runMOVES1}
+createRunspec(rs, output_runspec)
+createBatchFile(batchfile, c(output_runspec), moves_location)
+runMOVES(batchfile)
+
+```
+## Running MOVES - Option 2
+
+You simply need to tell .
+
+```{r runMOVES2}
+
+createTempFilesAndRunMOVES(c(rs), folder, moves_location)
+
+```
+## Get Output
+
+Get the run data and display.
+
+```{r getRun}
+by_or_moves_data_run <- getMOVESRun(dbconn, movesdb_name, outputdb_name)   
+print(by_or_moves_data_run)
+```
+
+Get the output data and summarize (July only run).  Note that even though it isnt't in the the DB the weekdays and weekends of the month are added to the dataframe.
+
+```{r getOutput}
+by_or_moves_data <- getMOVESOutput(dbconn, movesdb_name, outputdb_name)                     
+summary <-by_or_moves_data %>%
+  filter(pollutantName %in% c("Carbon Monoxide (CO)","Oxides of Nitrogen (NOx)","Non-Methane Hydrocarbons")) %>%
+  group_by(monthName, pollutantName) %>%
+  summarise(TotalEmissions = sum(emissionQuant*ifelse(dayID == 2, weekendsInMonth, weekdaysInMonth)))
+
+print(summary)
+```
+
+## Close DB Connection
+```{r end_db_connection}
+endDBConnection(dbconn)
+```
+
