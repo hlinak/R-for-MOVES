@@ -10,13 +10,15 @@ password <- 'K7j0Ret79TwUIjxZExbZ'
 movesdb_name <- 'movesdb20180517'
 countydb_name <- 'ozn_dc_2017_naaq_in'
 outputdb_name <- 'ozn_dc_2017_naaq_out'
+
+password <- 'password'
+movesdb_name <- 'movesdb20181022'
+countydb_name <- 'c11001y2016_20180906_2016clrp'
+outputdb_name <- 'c11001y2017_2016clrp_out'
+
 moves_location <- "C:\\Users\\Public\\EPA\\MOVES\\MOVES2014b"
 
 dbconn <- makeDBConnection(user = 'root', password=password)
-
-getMOVESBaseTable(dbconn, movesdb_name, 'sourceusetype')
-getMOVESBaseTable(dbconn, movesdb_name, 'sourceusetype')
-
 
 suffix <- "_scenario1"
 new_countydb_name <- paste(countydb_name, suffix, sep="")
@@ -38,44 +40,47 @@ createBatchFile(batchfile,c(output_runspec),moves_location)
 runMOVES(batchfile)
 createTempFilesAndRunMOVES(c(rs),folder,moves_location)
 
-data <- getActivityType(dbconn, movesdb_name, outputdb_name)
-data <- getBaseRateOutput(dbconn, movesdb_name, outputdb_name)
-data <- getBaseRateUnits(dbconn, movesdb_name, outputdb_name)
-data <- getMOVESActivityOutput(dbconn, movesdb_name, outputdb_name)
-data <- getMOVESError(dbconn, movesdb_name, outputdb_name)
-data <- getMOVESEventLog(dbconn, movesdb_name, outputdb_name)
-data <- getMOVESOutput(dbconn, movesdb_name, outputdb_name)
-data <- getMOVESRun(dbconn, movesdb_name, outputdb_name)
-data <- getMOVESTablesUsed(dbconn, movesdb_name, outputdb_name)
-data <- getMOVESWorkersUsed(dbconn, movesdb_name, outputdb_name)
-data <- getRatePerDistance(dbconn, movesdb_name, outputdb_name)
-data <- getRatePerHour(dbconn, movesdb_name, outputdb_name)
-data <- getRatePerProfile(dbconn, movesdb_name, outputdb_name)
-data <- getRatePerStart(dbconn, movesdb_name, outputdb_name)
-data <- getRatePerVehicle(dbconn, movesdb_name, outputdb_name)
-data <- getStartsPerVehicle(dbconn, movesdb_name, outputdb_name)
+data <- getMOVESBaseTable(dbconn, movesdb_name, "sourceusetype")
+data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "agesourcedistribution")
+
+data <- getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "activitytype")
+data <- getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "baserateoutput")
+data <- getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "baserateunits")
+data <- getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "movesactivityoutput")
+data <- getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "moveserror")
+data <- getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "moveseventlog")
+data <- getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "movesoutput")
+data <- getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "movesrun")
+data <- getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "movestablesused")
+data <- getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "movesworkerused")
+data <- getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "rateperdistance")
+data <- getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "rateperhour")
+data <- getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "rateperprofile")
+data <- getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "rateperstart")
+data <- getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "ratepervehicle")
+data <- getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "startspervehicle")
 
 #testing
-data <- getAverageSpeedBin(dbconn, movesdb_name, countydb_name)
-data <- getAVFT(dbconn, movesdb_name, countydb_name)
-data <- getDayVMTFraction(dbconn, movesdb_name, countydb_name)
-data <- getFuelFormulation(dbconn, movesdb_name, countydb_name)
-data <- getFuelSupply(dbconn, movesdb_name, countydb_name)
-data <- getFuelUsageFraction(dbconn, movesdb_name, countydb_name)
-data <- getHotellingActivityDistribution(dbconn, movesdb_name, countydb_name)
-data <- getHourVMTFraction(dbconn, movesdb_name, countydb_name)
-data <- getHPMSVtypeYear(dbconn, movesdb_name, countydb_name)
-data <- getIMCoverage(dbconn, movesdb_name, countydb_name)
-data <- getMonth(dbconn, movesdb_name, countydb_name)
-data <- getMonthVMTFraction(dbconn, movesdb_name, countydb_name)
-data <- getOnRoadRetrofit(dbconn, movesdb_name, countydb_name)
-data <- getOpModeDistribution(dbconn, movesdb_name, countydb_name)
-data <- getRoadTypeDistribution(dbconn, movesdb_name, countydb_name)
-data <- getSourceTypeAgeDistribution(dbconn, movesdb_name, countydb_name)
-data <- getSourceTypeDayVMT(dbconn, movesdb_name, countydb_name)
-data <- getSourceTypeYear(dbconn, movesdb_name, countydb_name)
-data <- getSourceTypeYearVMT(dbconn, movesdb_name, countydb_name)
-data <- getStartsSourceTypeFraction(dbconn, movesdb_name, countydb_name)
+data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "avgspeedstribution")
+data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "avft")
+data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "dayvmtfraction")
+data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "fuelformulation")
+data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "fuelsupply")
+data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "fuelusagefraction")
+data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "hotelingactivitydistribution")
+data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "hourvmtfraction")
+data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "hpmsvtypeyear")
+data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "imcoverage")
+data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "month")
+data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "monthvmtfraction")
+data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "onroadretrofit")
+data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "opmodedistribution")
+data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "roadtypedistribution")
+data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "sourcetypeagedistribution")
+data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "sourcetypedayvmt")
+data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "sourcetypeyear")
+data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "sourcetypeyearvmt")
+data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "startssourcetypefraction")
 
 
 plot <- data %>%
