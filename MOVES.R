@@ -38,8 +38,7 @@ getRunspecValue(rs, "//description")
 setRunspecValue(rs, "//description", "test 2", TRUE)
 
 
-setRunspecAttr(rs, "//outputdatabase", c(databasename =  new_outputdb_name))
-createRunspec(rs, output_runspec)
+
 createBatchFile(batchfile,c(output_runspec),moves_location)
 runMOVES(batchfile)
 createTempFilesAndRunMOVES(c(rs),folder,moves_location)

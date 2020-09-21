@@ -359,6 +359,7 @@ copyMOVESDatabase <- function(dbconn, db_from_name, db_to_name) {
       table_data <- RMySQL::fetch(RMySQL::dbSendQuery(dbconn, paste("SHOW TABLES IN ",db_from_name, sep="")),n=-1)
       for(row in 1:nrow(table_data)) {
         table_name <- table_data[row, paste("Tables_in_",db_from_name,sep="")]
+        #print(paste("Create table:", table_name))
         RMySQL::dbSendQuery(dbconn, paste("CREATE TABLE ",db_to_name,".",table_name," LIKE ",db_from_name,".",table_name, sep=""))
         RMySQL::dbSendQuery(dbconn, paste("INSERT INTO ",db_to_name,".",table_name," SELECT * FROM ",db_from_name,".",table_name, sep=""))
       }
@@ -421,11 +422,11 @@ replaceMOVESTable <- function(dbconn, db_name, table_name, data) {
 #' @examples
 #' getMOVESTableS(dbconn, db_name)
 getMOVESTables <- function(dbconn, db_name) {
-  if(!checkDatabase(dbconn, movesdb_name)) {
-    warning("Database: ", movesdb_name, " could not be located.")
+  if(!checkDatabase(dbconn, db_name, db_name)) {
+    warning("Database: ", db_name, " could not be located.")
     return(FALSE)
   }
-  return(processGetQuery(dbconn, paste("SHOW TABLES IN", movesdb_name)))
+  return(processGetQuery(dbconn, paste("SHOW TABLES IN", db_name)))
 }
 
 #' getMOVESBaseTable
