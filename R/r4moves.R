@@ -137,7 +137,7 @@ readRunspec <- function(runspecLocation) {
 #' @examples
 #' getRunspecValue(rs, "//scaleinputdatabase")
 getRunspecValue <- function(runspec, xpathsLocation) {
-  return(xmlValue(getNodeSet(rs, xpathsLocation)))
+  return(vxmlValue(XML::getNodeSet(rs, xpathsLocation)))
 }
 
 #' setRunspecValue
@@ -153,17 +153,18 @@ getRunspecValue <- function(runspec, xpathsLocation) {
 #' @examples
 #' setRunspecValue(rs, "//description", "MOVES Test Run 2")
 setRunspecValue <- function(runspec, xpathsLocation, value, cdata = FALSE) {
-  ns <- getNodeSet(runspec, xpathsLocation)
+  ns <- XML::getNodeSet(runspec, xpathsLocation)
   lapply(ns, function(n) {
     XML::removeChildren(n, c(1))
     if(cdata) {
-      XML::addChildren(n, c(newXMLCDataNode(value)))
+      XML::addChildren(n, c(XML::newXMLCDataNode(value)))
     } else {
-      XML::addChildren(n, c(newXMLTextNode(value)))
+      XML::addChildren(n, c(XML::newXMLTextNode(value)))
     }
   })
   return(ns)
 }
+
 #' getRunspecAttr
 #' @description Gets an attibute in a runspec \code{XML::xmlParse()} object.
 #'
@@ -357,13 +358,14 @@ copyMOVESDatabase <- function(dbconn, db_from_name, db_to_name) {
     } else {
       RMySQL::dbSendQuery(dbconn, paste("CREATE DATABASE ",db_to_name, sep=""))
       table_data <- RMySQL::fetch(RMySQL::dbSendQuery(dbconn, paste("SHOW TABLES IN ",db_from_name, sep="")),n=-1)
-      for(row in 1:nrow(table_data)) {
-        table_name <- table_data[row, paste("Tables_in_",db_from_name,sep="")]
-        print(paste("Creating table:", table_name))
-        print(paste("CREATE TABLE ",db_to_name,".",table_name," LIKE ",db_from_name,".",table_name, sep=""))
-        print(paste("INSERT INTO ",db_to_name,".",table_name," SELECT * FROM ",db_from_name,".",table_name, sep=""))
-        RMySQL::dbSendQuery(dbconn, paste("CREATE TABLE ",db_to_name,".",table_name," LIKE ",db_from_name,".",table_name, sep=""))
-        RMySQL::dbSendQuery(dbconn, paste("INSERT INTO ",db_to_name,".",table_name," SELECT * FROM ",db_from_name,".",table_name, sep=""))
+      for(row in table_data) {
+        for(table_name in row) {
+          print(paste("Creating table:", table_name))
+          print(paste("CREATE TABLE ",db_to_name,".",table_name," LIKE ",db_from_name,".",table_name, sep=""))
+          print(paste("INSERT INTO ",db_to_name,".",table_name," SELECT * FROM ",db_from_name,".",table_name, sep=""))
+          RMySQL::dbSendQuery(dbconn, paste("CREATE TABLE ",db_to_name,".",table_name," LIKE ",db_from_name,".",table_name, sep=""))
+          RMySQL::dbSendQuery(dbconn, paste("INSERT INTO ",db_to_name,".",table_name," SELECT * FROM ",db_from_name,".",table_name, sep=""))
+        }
       }
       return(TRUE)
     }
@@ -472,6 +474,7 @@ getMOVESBaseTable <- function(dbconn, movesdb_name, table_name) {
 getMOVESInputTable <- function(dbconn, movesdb_name, countydb_name, table_name) {
   if(table_name == "avgspeedstribution") { return(getAverageSpeedDistribution(dbconn, movesdb_name, countydb_name)) }
   if(table_name == "avft") { return(getAVFT(dbconn, movesdb_name, countydb_name)) }
+  if(table_name == "county") { return(getCounty(dbconn, movesdb_name, countydb_name)) }
   if(table_name == "dayvmtfraction") { return(getDayVMTFraction(dbconn, movesdb_name, countydb_name)) }
   if(table_name == "fuelformulation") { return(getFuelFormulation(dbconn, movesdb_name, countydb_name)) }
   if(table_name == "fuelsupply") { return(getFuelSupply(dbconn, movesdb_name, countydb_name)) }
@@ -490,6 +493,7 @@ getMOVESInputTable <- function(dbconn, movesdb_name, countydb_name, table_name) 
   if(table_name == "sourcetypeyear") { return(getSourceTypeYear(dbconn, movesdb_name, countydb_name)) }
   if(table_name == "sourcetypeyearvmt") { return(getSourceTypeYearVMT(dbconn, movesdb_name, countydb_name)) }
   if(table_name == "startssourcetypefraction") { return(getStartsSourceTypeFraction(dbconn, movesdb_name, countydb_name)) }
+  if(table_name == "state") { return(getState(dbconn, movesdb_name, countydb_name)) }
   warning("Table: ", table_name, " has either not been coded into r4moves or is not a proper MOVES input table.")
   return(FALSE)
 }
@@ -540,6 +544,12 @@ getAverageSpeedDistribution <- function(dbconn, movesdb_name, countydb_name) {
   if(!checkDatabase(dbconn, movesdb_name, countydb_name)) { return(FALSE) }
   if(!checkTable(dbconn, countydb_name,"avgspeeddistribution")) { return(FALSE) }
   return(processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("avgSpeedFraction"),"avgspeeddistribution",c("hourday","avgspeedbin","roadtype","sourceusetype"),c("hourDayID","avgSpeedBinID","roadTypeID","sourceTypeID"),c("hourday","sourceusetype"),c("dayofanyweek","hpmsvtype"),c("dayID","HPMSVtypeID"))))
+}
+
+getCounty <- function(dbconn, movesdb_name, countydb_name) {
+  if(!checkDatabase(dbconn, movesdb_name, countydb_name)) { return(FALSE) }
+  if(!checkTable(dbconn, countydb_name,"county")) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("countyID", "countyName", "altitude", "GPAFract", "barometricPressure", "barometricPressureCV"),"county",c("state"),c("stateID"))))
 }
 
 getDayVMTFraction <- function(dbconn, movesdb_name, countydb_name) {
@@ -649,6 +659,12 @@ getStartsSourceTypeFraction <- function(dbconn, movesdb_name, countydb_name) {
   if(!checkDatabase(dbconn, movesdb_name, countydb_name)) { return(FALSE) }
   if(!checkTable(dbconn, countydb_name,"startssourcetypefraction")) { return(FALSE) }
   return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("allocationFraction"),"startssourcetypefraction",c("sourceusetype"),c("sourceTypeID"))))
+}
+
+getState <- function(dbconn, movesdb_name, countydb_name) {
+  if(!checkDatabase(dbconn, movesdb_name, countydb_name)) { return(FALSE) }
+  if(!checkTable(dbconn, countydb_name,"state")) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("stateID", "stateName", "stateAbbr"),"state")))
 }
 
 #output tables
