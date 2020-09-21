@@ -1,0 +1,135 @@
+<?xml version="1.0"?>
+<runspec version="MOVES2014b-20180726">
+  <description><![CDATA[]]></description>
+  <models>
+    <model value="ONROAD"/>
+  </models>
+  <modelscale value="Inv"/>
+  <modeldomain value="SINGLE"/>
+  <geographicselections>
+    <geographicselection type="COUNTY" key="11001" description="DISTRICT OF COLUMBIA - District of Columbia"/>
+  </geographicselections>
+  <timespan>
+    <year key="2017"/>
+    <month id="1"/>
+    <month id="2"/>
+    <month id="3"/>
+    <month id="4"/>
+    <month id="5"/>
+    <month id="6"/>
+    <month id="7"/>
+    <month id="8"/>
+    <month id="9"/>
+    <month id="10"/>
+    <month id="11"/>
+    <month id="12"/>
+    <day id="2"/>
+    <day id="5"/>
+    <beginhour id="1"/>
+    <endhour id="24"/>
+    <aggregateBy key="Hour"/>
+  </timespan>
+  <onroadvehicleselections>
+    <onroadvehicleselection fueltypeid="3" fueltypedesc="Compressed Natural Gas (CNG)" sourcetypeid="42" sourcetypename="Transit Bus"/>
+    <onroadvehicleselection fueltypeid="2" fueltypedesc="Diesel Fuel" sourcetypeid="62" sourcetypename="Combination Long-haul Truck"/>
+    <onroadvehicleselection fueltypeid="2" fueltypedesc="Diesel Fuel" sourcetypeid="61" sourcetypename="Combination Short-haul Truck"/>
+    <onroadvehicleselection fueltypeid="2" fueltypedesc="Diesel Fuel" sourcetypeid="41" sourcetypename="Intercity Bus"/>
+    <onroadvehicleselection fueltypeid="2" fueltypedesc="Diesel Fuel" sourcetypeid="32" sourcetypename="Light Commercial Truck"/>
+    <onroadvehicleselection fueltypeid="2" fueltypedesc="Diesel Fuel" sourcetypeid="54" sourcetypename="Motor Home"/>
+    <onroadvehicleselection fueltypeid="2" fueltypedesc="Diesel Fuel" sourcetypeid="21" sourcetypename="Passenger Car"/>
+    <onroadvehicleselection fueltypeid="2" fueltypedesc="Diesel Fuel" sourcetypeid="31" sourcetypename="Passenger Truck"/>
+    <onroadvehicleselection fueltypeid="2" fueltypedesc="Diesel Fuel" sourcetypeid="51" sourcetypename="Refuse Truck"/>
+    <onroadvehicleselection fueltypeid="2" fueltypedesc="Diesel Fuel" sourcetypeid="43" sourcetypename="School Bus"/>
+    <onroadvehicleselection fueltypeid="2" fueltypedesc="Diesel Fuel" sourcetypeid="53" sourcetypename="Single Unit Long-haul Truck"/>
+    <onroadvehicleselection fueltypeid="2" fueltypedesc="Diesel Fuel" sourcetypeid="52" sourcetypename="Single Unit Short-haul Truck"/>
+    <onroadvehicleselection fueltypeid="2" fueltypedesc="Diesel Fuel" sourcetypeid="42" sourcetypename="Transit Bus"/>
+    <onroadvehicleselection fueltypeid="9" fueltypedesc="Electricity" sourcetypeid="32" sourcetypename="Light Commercial Truck"/>
+    <onroadvehicleselection fueltypeid="9" fueltypedesc="Electricity" sourcetypeid="21" sourcetypename="Passenger Car"/>
+    <onroadvehicleselection fueltypeid="9" fueltypedesc="Electricity" sourcetypeid="31" sourcetypename="Passenger Truck"/>
+    <onroadvehicleselection fueltypeid="5" fueltypedesc="Ethanol (E-85)" sourcetypeid="32" sourcetypename="Light Commercial Truck"/>
+    <onroadvehicleselection fueltypeid="5" fueltypedesc="Ethanol (E-85)" sourcetypeid="21" sourcetypename="Passenger Car"/>
+    <onroadvehicleselection fueltypeid="5" fueltypedesc="Ethanol (E-85)" sourcetypeid="31" sourcetypename="Passenger Truck"/>
+    <onroadvehicleselection fueltypeid="1" fueltypedesc="Gasoline" sourcetypeid="61" sourcetypename="Combination Short-haul Truck"/>
+    <onroadvehicleselection fueltypeid="1" fueltypedesc="Gasoline" sourcetypeid="32" sourcetypename="Light Commercial Truck"/>
+    <onroadvehicleselection fueltypeid="1" fueltypedesc="Gasoline" sourcetypeid="54" sourcetypename="Motor Home"/>
+    <onroadvehicleselection fueltypeid="1" fueltypedesc="Gasoline" sourcetypeid="11" sourcetypename="Motorcycle"/>
+    <onroadvehicleselection fueltypeid="1" fueltypedesc="Gasoline" sourcetypeid="21" sourcetypename="Passenger Car"/>
+    <onroadvehicleselection fueltypeid="1" fueltypedesc="Gasoline" sourcetypeid="31" sourcetypename="Passenger Truck"/>
+    <onroadvehicleselection fueltypeid="1" fueltypedesc="Gasoline" sourcetypeid="51" sourcetypename="Refuse Truck"/>
+    <onroadvehicleselection fueltypeid="1" fueltypedesc="Gasoline" sourcetypeid="43" sourcetypename="School Bus"/>
+    <onroadvehicleselection fueltypeid="1" fueltypedesc="Gasoline" sourcetypeid="53" sourcetypename="Single Unit Long-haul Truck"/>
+    <onroadvehicleselection fueltypeid="1" fueltypedesc="Gasoline" sourcetypeid="52" sourcetypename="Single Unit Short-haul Truck"/>
+    <onroadvehicleselection fueltypeid="1" fueltypedesc="Gasoline" sourcetypeid="42" sourcetypename="Transit Bus"/>
+  </onroadvehicleselections>
+  <offroadvehicleselections>
+	</offroadvehicleselections>
+  <offroadvehiclesccs>
+	</offroadvehiclesccs>
+  <roadtypes separateramps="false">
+    <roadtype roadtypeid="1" roadtypename="Off-Network" modelCombination="M1"/>
+    <roadtype roadtypeid="2" roadtypename="Rural Restricted Access" modelCombination="M1"/>
+    <roadtype roadtypeid="3" roadtypename="Rural Unrestricted Access" modelCombination="M1"/>
+    <roadtype roadtypeid="4" roadtypename="Urban Restricted Access" modelCombination="M1"/>
+    <roadtype roadtypeid="5" roadtypename="Urban Unrestricted Access" modelCombination="M1"/>
+  </roadtypes>
+  <pollutantprocessassociations>
+    <pollutantprocessassociation pollutantkey="3" pollutantname="Oxides of Nitrogen (NOx)" processkey="1" processname="Running Exhaust"/>
+    <pollutantprocessassociation pollutantkey="3" pollutantname="Oxides of Nitrogen (NOx)" processkey="2" processname="Start Exhaust"/>
+    <pollutantprocessassociation pollutantkey="3" pollutantname="Oxides of Nitrogen (NOx)" processkey="15" processname="Crankcase Running Exhaust"/>
+    <pollutantprocessassociation pollutantkey="3" pollutantname="Oxides of Nitrogen (NOx)" processkey="16" processname="Crankcase Start Exhaust"/>
+    <pollutantprocessassociation pollutantkey="3" pollutantname="Oxides of Nitrogen (NOx)" processkey="17" processname="Crankcase Extended Idle Exhaust"/>
+    <pollutantprocessassociation pollutantkey="3" pollutantname="Oxides of Nitrogen (NOx)" processkey="90" processname="Extended Idle Exhaust"/>
+    <pollutantprocessassociation pollutantkey="3" pollutantname="Oxides of Nitrogen (NOx)" processkey="91" processname="Auxiliary Power Exhaust"/>
+  </pollutantprocessassociations>
+  <databaseselections>
+    <databaseselection servername="" databasename="MOVES2014_early_NLEV" description=""/>
+  </databaseselections>
+  <internalcontrolstrategies>
+    <internalcontrolstrategy classname="gov.epa.otaq.moves.master.implementation.ghg.internalcontrolstrategies.rateofprogress.RateOfProgressStrategy"><![CDATA[
+useParameters	No
+
+]]></internalcontrolstrategy>
+  </internalcontrolstrategies>
+  <inputdatabase servername="" databasename="" description=""/>
+  <uncertaintyparameters uncertaintymodeenabled="false" numberofrunspersimulation="0" numberofsimulations="0"/>
+  <geographicoutputdetail description="COUNTY"/>
+  <outputemissionsbreakdownselection>
+    <modelyear selected="true"/>
+    <fueltype selected="true"/>
+    <fuelsubtype selected="false"/>
+    <emissionprocess selected="true"/>
+    <onroadoffroad selected="true"/>
+    <roadtype selected="true"/>
+    <sourceusetype selected="true"/>
+    <movesvehicletype selected="false"/>
+    <onroadscc selected="true"/>
+    <estimateuncertainty selected="false" numberOfIterations="2" keepSampledData="false" keepIterations="false"/>
+    <sector selected="false"/>
+    <engtechid selected="false"/>
+    <hpclass selected="false"/>
+    <regclassid selected="true"/>
+  </outputemissionsbreakdownselection>
+  <outputdatabase databasename="ozn_dc_2017_naaq_in_scenario1"/>
+  <outputtimestep value="Hour"/>
+  <outputvmtdata value="true"/>
+  <outputsho value="true"/>
+  <outputsh value="true"/>
+  <outputshp value="true"/>
+  <outputshidling value="true"/>
+  <outputstarts value="true"/>
+  <outputpopulation value="true"/>
+  <scaleinputdatabase servername="" databasename="ozn_dc_2017_naaq_in" description=""/>
+  <pmsize value="0"/>
+  <outputfactors>
+    <timefactors selected="true" units="Hours"/>
+    <distancefactors selected="true" units="Miles"/>
+    <massfactors selected="true" units="Pounds" energyunits="Million BTU"/>
+  </outputfactors>
+  <savedata>
+	</savedata>
+  <donotexecute>
+	</donotexecute>
+  <generatordatabase shouldsave="false" servername="" databasename="" description=""/>
+  <donotperformfinalaggregation selected="false"/>
+  <lookuptableflags scenarioid="" truncateoutput="true" truncateactivity="true" truncatebaserates="true"/>
+</runspec>

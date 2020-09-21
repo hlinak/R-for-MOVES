@@ -27,13 +27,17 @@ copyMOVESDatabase(dbconn, countydb_name, new_countydb_name)
 data <- getAverageSpeedBin(dbconn, movesdb_name, countydb_name)
 replaceMOVESTable(dbconn,new_countydb_name, "avgspeeddistribution", data)
 
-folder <- input_runspec <- "C:\\Users\\joseph.jakuta\\Desktop\\"
+folder <- input_runspec <- "test_files\\"
 input_runspec <- paste(folder, "test_runspec.xml", sep='')
 output_runspec <- paste(folder, "test_runspec_new.mrs", sep='')
 batchfile <- paste(folder, "test_batch.bat", sep='')
 
 rs <- readRunspec(input_runspec)
 getRunspecAttr(rs, "//scaleinputdatabase", "databasename")
+getRunspecValue(rs, "//description")
+setRunspecValue(rs, "//description", "test 2", TRUE)
+
+
 setRunspecAttr(rs, "//outputdatabase", c(databasename =  new_outputdb_name))
 createRunspec(rs, output_runspec)
 createBatchFile(batchfile,c(output_runspec),moves_location)

@@ -125,6 +125,46 @@ readRunspec <- function(runspecLocation) {
   return(XML::xmlParse(runspecLocation))
 }
 
+#' getRunspecValue
+#' @description Gets an attibute in a runspec \code{XML::xmlParse()} object.
+#'
+#' @param runspec \code{XML::xmlParse()} object
+#' @param xpathsLocation string in the format of an XPath (https://way2tutorial.com/xml/xpath-expression.php)
+#'
+#' @return \code{XML::xNodeSet()} of the node from runspec
+#' @export
+#'
+#' @examples
+#' getRunspecValue(rs, "//scaleinputdatabase")
+getRunspecValue <- function(runspec, xpathsLocation) {
+  return(xmlValue(getNodeSet(rs, xpathsLocation)))
+}
+
+
+#' setRunspecValue
+#' @description Sets an attibute in a runspec \code{XML::xmlParse()} object.
+#'
+#' @param runspec \code{XML::xmlParse()} object
+#' @param xpathsLocation string in the format of an XPath (https://way2tutorial.com/xml/xpath-expression.php)
+#' @param value string to set the value in the selected node to
+#' #'
+#' @return \code{XML::xNodeSet()} of the node from runspec
+#' @export
+#'
+#' @examples
+#' setRunspecValue(rs, "//description", "MOVES Test Run 2")
+setRunspecValue <- function(runspec, xpathsLocation, value, cdata = FALSE) {
+  ns <- getNodeSet(runspec, xpathsLocation)
+  lapply(ns, function(n) {
+    XML::removeChildren(n, c(1))
+    if(cdata) {
+      XML::addChildren(n, c(newXMLCDataNode(value)))
+    } else {
+      XML::addChildren(n, c(newXMLTextNode(value)))
+    }
+  })
+  return(ns)
+}
 #' getRunspecAttr
 #' @description Gets an attibute in a runspec \code{XML::xmlParse()} object.
 #'
@@ -370,6 +410,24 @@ replaceMOVESTable <- function(dbconn, db_name, table_name, data) {
   }
 }
 
+#' getMOVESTableS
+#' @description Gets the results of a table in a MOVES database.
+#'
+#' @param dbconn MySQL db connection
+#' @param movesdb_name MySQL default database to be updated as string
+#'
+#' @return Either a dataframe with the result from \code{RMySQL::dbSendQuery()} or FALSE
+#' @export
+#'
+#' @examples
+#' getMOVESTableS(dbconn, db_name)
+getMOVESTables <- function(dbconn, db_name) {
+  if(!checkDatabase(dbconn, movesdb_name)) {
+    warning("Database: ", movesdb_name, " could not be located.")
+    return(FALSE)
+  }
+  return(processGetQuery(dbconn, paste("SHOW TABLES IN", movesdb_name)))
+}
 
 #' getMOVESBaseTable
 #' @description Gets the results of a table in a MOVES database.
