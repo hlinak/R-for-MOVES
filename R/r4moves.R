@@ -140,7 +140,6 @@ getRunspecValue <- function(runspec, xpathsLocation) {
   return(xmlValue(getNodeSet(rs, xpathsLocation)))
 }
 
-
 #' setRunspecValue
 #' @description Sets an attibute in a runspec \code{XML::xmlParse()} object.
 #'
