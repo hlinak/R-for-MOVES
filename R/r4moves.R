@@ -165,6 +165,45 @@ setRunspecValue <- function(runspec, xpathsLocation, value, cdata = FALSE) {
   return(ns)
 }
 
+#' AddRunspecNode
+#' @description Sets an attibute in a runspec \code{XML::xmlParse()} object.
+#'
+#' @param runspec \code{XML::xmlParse()} object
+#' @param xpathsLocation string in the format of an XPath (https://way2tutorial.com/xml/xpath-expression.php)
+#' @param childNAme string of the node to be added
+#' #'
+#' @return \code{XML::xNodeSet()} of the node from runspec
+#' @export
+#'
+#' @examples
+#' addRunspecNode(rs, "//databaseselections", "databaseselection")
+addRunspecNode <- function(runspec, xpathsLocation, childName, value = NULL, attrs = c(), cdata=FALSE) {
+  ns <- XML::getNodeSet(runspec, xpathsLocation)
+  lapply(ns, function(n) {
+    XML::addChildren(n, c(XML::newXMLNode(childName, value = value, attrs = attrs, cdata = cdata)))
+  })
+  return(ns)
+}
+
+#' RemoveRunspecNode
+#' @description Sets an attibute in a runspec \code{XML::xmlParse()} object.
+#'
+#' @param runspec \code{XML::xmlParse()} object
+#' @param xpathsLocation string in the format of an XPath (https://way2tutorial.com/xml/xpath-expression.php)
+#' #'
+#' @return \code{XML::xNodeSet()} of the node from runspec
+#' @export
+#'
+#' @examples
+#' addRunspecNode(rs, "//databaseselections//databaseselection", )
+removeRunspecNode <- function(runspec, xpathsLocation, chaneName) {
+  ns <- XML::getNodeSet(runspec, xpathsLocation)
+  lapply(ns, function(n) {
+    XML::addChildren(n, c(XML::newXMLNode(childName)))
+  })
+  return(ns)
+}
+
 #' getRunspecAttr
 #' @description Gets an attibute in a runspec \code{XML::xmlParse()} object.
 #'
