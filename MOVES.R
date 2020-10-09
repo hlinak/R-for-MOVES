@@ -43,6 +43,7 @@ createBatchFile(batchfile,c(output_runspec),moves_location)
 runMOVES(batchfile)
 createTempFilesAndRunMOVES(c(rs),folder,moves_location)
 
+getMOVESTables(dbconn, countydb_name)
 data <- getMOVESBaseTable(dbconn, movesdb_name, "sourceusetype")
 data <- getMOVESInputTable(dbconn, movesdb_name, countydb_name, "agesourcedistribution")
 
