@@ -11,6 +11,7 @@ movesdb_name <- 'movesdb20180517'
 countydb_name <- 'ozn_dc_2017_naaq_in'
 outputdb_name <- 'ozn_dc_2017_naaq_out'
 
+
 password <- 'password'
 movesdb_name <- 'movesdb20181022'
 countydb_name <- 'c11001y2016_20180906_2016clrp'
@@ -19,6 +20,19 @@ outputdb_name <- 'c11001y2017_2016clrp_out'
 moves_location <- "C:\\Users\\Public\\EPA\\MOVES\\MOVES2014b"
 
 dbconn <- makeDBConnection(user = 'root', password=password)
+
+getMOVESOutputTable(dbconn, movesdb_name , "dc_imsip_v45_2020_amnd_ozn_dc_2025_out_c", "movesrun")
+deleteMOVESRun(dbconn, "dc_imsip_v45_2020_amnd_ozn_dc_2025_out_c", 6)
+getMOVESOutputTable(dbconn, movesdb_name , "dc_imsip_v45_2020_amnd_ozn_dc_2025_out_c", "movesrun")
+renumberMOVESRun(dbconn, "dc_imsip_v45_2020_amnd_ozn_dc_2025_out_c", 7, 6)
+getMOVESOutputTable(dbconn, movesdb_name , "dc_imsip_v45_2020_amnd_ozn_dc_2025_out_c", "movesrun")
+
+max_id <- RMySQL::fetch(RMySQL::dbSendQuery(dbconn, paste("select * from ","dc_imsip_v45_2020_amnd_ozn_dc_2025_out_c",".movesrun WHERE MOVESRunID = ", 7, sep="")))
+nrow(max_id) == 0
+
+max_id <- RMySQL::fetch(RMySQL::dbSendQuery(dbconn, paste("SELECT `AUTO_INCREMENT` FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '","dc_imsip_v45_2020_amnd_ozn_dc_2025_out_c","' AND TABLE_NAME = 'movesrun';", sep="")))
+max_id
+print(as.character(as.integer(max_id['AUTO_INCREMENT'][1])+1))
 
 suffix <- "_scenario1"
 new_countydb_name <- paste(countydb_name, suffix, sep="")

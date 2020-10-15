@@ -4,30 +4,29 @@
 \alias{addRunspecNode}
 \title{AddRunspecNode}
 \usage{
-addRunspecNode(runspec, xpathsLocation, chaneName)
-
-addRunspecNode(runspec, xpathsLocation, chaneName)
+addRunspecNode(
+  runspec,
+  xpathsLocation,
+  childName,
+  value = NULL,
+  attrs = c(),
+  cdata = FALSE
+)
 }
 \arguments{
 \item{runspec}{\code{XML::xmlParse()} object}
 
-\item{xpathsLocation}{string in the format of an XPath (https://way2tutorial.com/xml/xpath-expression.php)
-#'}
+\item{xpathsLocation}{string in the format of an XPath (https://way2tutorial.com/xml/xpath-expression.php)}
 
 \item{childNAme}{string of the node to be added
 #'}
 }
 \value{
 \code{XML::xNodeSet()} of the node from runspec
-
-\code{XML::xNodeSet()} of the node from runspec
 }
 \description{
-Sets an attibute in a runspec \code{XML::xmlParse()} object.
-
 Sets an attibute in a runspec \code{XML::xmlParse()} object.
 }
 \examples{
 addRunspecNode(rs, "//databaseselections", "databaseselection")
-addRunspecNode(rs, "//databaseselections//databaseselection", )
 }

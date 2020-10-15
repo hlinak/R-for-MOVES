@@ -453,6 +453,83 @@ replaceMOVESTable <- function(dbconn, db_name, table_name, data) {
   }
 }
 
+#' renumberMOVESRun
+#'
+#' @param dbconn MySQL db connection
+#' @param outputdb_name MySQL county database to be updated as string.
+#' @param oldmovesrunid MOVESRunID for rows to be moved
+#' @param newmovesrunid MOVESRunID for where rows are to be moved
+#'
+#' @return TRUE if succesful, FALSE otherwise
+#' @export
+#'
+#' @examples
+#' renumberMOVESRun(dbconn, outputdb_name, 6, 4)
+renumberMOVESRun <- function(dbconn, outputdb_name, oldmovesrunid, newmovesrunid) {
+  if(databaseExists(dbconn, outputdb_name)) {
+    if(nrow(suppressWarnings(RMySQL::fetch(RMySQL::dbSendQuery(dbconn, paste("select * from ",outputdb_name,".movesrun WHERE MOVESRunID = ", oldmovesrunid, sep=""))))) > 0) {
+      if(nrow(suppressWarnings(RMySQL::fetch(RMySQL::dbSendQuery(dbconn, paste("select * from ",outputdb_name,".movesrun WHERE MOVESRunID = ", newmovesrunid, sep=""))))) == 0) {
+        suppressWarnings(RMySQL::dbSendQuery(dbconn, paste("update ",outputdb_name,".movesrun set MOVESRunID = ", newmovesrunid, " where movesrunid = ", oldmovesrunid, sep='')))
+        suppressWarnings(RMySQL::dbSendQuery(dbconn, paste("update ",outputdb_name,".movesactivityoutput set MOVESRunID = ", newmovesrunid, " where movesrunid = ", oldmovesrunid, sep='')))
+        suppressWarnings(RMySQL::dbSendQuery(dbconn, paste("update ",outputdb_name,".moveseventlog set MOVESRunID = ", newmovesrunid, " where movesrunid = ", oldmovesrunid, sep='')))
+        suppressWarnings(RMySQL::dbSendQuery(dbconn, paste("update ",outputdb_name,".moveserror set MOVESRunID = ", newmovesrunid, " where movesrunid = ", oldmovesrunid, sep='')))
+        suppressWarnings(RMySQL::dbSendQuery(dbconn, paste("update ",outputdb_name,".movesworkersused set MOVESRunID = ", newmovesrunid, " where movesrunid = ", oldmovesrunid, sep='')))
+        suppressWarnings(RMySQL::dbSendQuery(dbconn, paste("update ",outputdb_name,".movestablesused set MOVESRunID = ", newmovesrunid, " where movesrunid = ", oldmovesrunid, sep='')))
+
+        max_id <- suppressWarnings(RMySQL::fetch(RMySQL::dbSendQuery(dbconn, paste("SELECT MAX(MOVESRunID) FROM ",outputdb_name,".movesrun;", sep=""))))
+        suppressWarnings(RMySQL::dbSendQuery(dbconn, paste("ALTER TABLE ",outputdb_name,".movesrun AUTO_INCREMENT = ",as.character(as.integer(max_id[1][1])+1), sep="")))
+        return(TRUE)
+      } else {
+        stop(paste("There is MOVESRunID alread at:", newmovesrunid, sep=""))
+        return(FALSE)
+      }
+    } else {
+      stop(paste("There is no MOVESRunID:", oldmovesrunid, sep=""))
+      return(FALSE)
+    }
+  } else {
+    stop(paste("There is no database:", db_name, sep=""))
+    return(FALSE)
+  }
+}
+
+#' deleteMOVESRun
+#'
+#' @param dbconn MySQL db connection
+#' @param outputdb_name MySQL county database to be updated as string.
+#' @param movesrunid MOVESRunID for rows to be deleted
+#'
+#' @return
+#' @export
+#'
+#' @return TRUE if succesful, FALSE otherwise
+#' @export
+#'
+#' @examples
+#' deleteMOVESRun(dbconn, outputdb_name, 6)
+deleteMOVESRun <- function(dbconn, outputdb_name, movesrunid) {
+  if(databaseExists(dbconn, outputdb_name)) {
+    if(nrow(suppressWarnings(RMySQL::fetch(RMySQL::dbSendQuery(dbconn, paste("select * from ",outputdb_name,".movesrun WHERE MOVESRunID = ", movesrunid, sep=""))))) > 0) {
+      suppressWarnings(RMySQL::dbSendQuery(dbconn, paste("delete from ",outputdb_name,".movesrun where MOVESRunID = ", movesrunid, sep='')))
+      suppressWarnings(RMySQL::dbSendQuery(dbconn, paste("delete from ",outputdb_name,".movesactivityoutput where MOVESRunID = ", movesrunid, sep='')))
+      suppressWarnings(RMySQL::dbSendQuery(dbconn, paste("delete from ",outputdb_name,".moveseventlog where MOVESRunID = ", movesrunid, sep='')))
+      suppressWarnings(RMySQL::dbSendQuery(dbconn, paste("delete from ",outputdb_name,".moveserror where MOVESRunID = ", movesrunid, sep='')))
+      suppressWarnings(RMySQL::dbSendQuery(dbconn, paste("delete from ",outputdb_name,".movesworkersused where MOVESRunID = ", movesrunid, sep='')))
+      suppressWarnings(RMySQL::dbSendQuery(dbconn, paste("delete from ",outputdb_name,".movestablesused where MOVESRunID = ", movesrunid, sep='')))
+
+      max_id <- suppressWarnings(RMySQL::fetch(RMySQL::dbSendQuery(dbconn, paste("SELECT MAX(MOVESRunID) FROM ",outputdb_name,".movesrun;", sep=""))))
+      suppressWarnings(RMySQL::dbSendQuery(dbconn, paste("ALTER TABLE ",outputdb_name,".movesrun AUTO_INCREMENT = ",as.character(as.integer(max_id[1][1])+1), sep="")))
+      return(TRUE)
+    } else {
+      stop(paste("There is no MOVESRunID:", movesrunid, sep=""))
+      return(FALSE)
+    }
+  } else {
+    stop(paste("There is no database:", db_name, sep=""))
+    return(FALSE)
+  }
+}
+
 #' getMOVESTableS
 #' @description Gets the results of a table in a MOVES database.
 #'
