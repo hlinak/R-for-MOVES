@@ -4,7 +4,14 @@
 \alias{getMOVESOutputTable}
 \title{getMOVESOutputTable}
 \usage{
-getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, table_name)
+getMOVESOutputTable(
+  dbconn,
+  movesdb_name,
+  outputdb_name,
+  table_name,
+  get_query_string = FALSE,
+  moves_run_id = FALSE
+)
 }
 \arguments{
 \item{dbconn}{MySQL db connection}
@@ -14,6 +21,8 @@ getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, table_name)
 \item{outputdb_name}{MySQL output database to be updated as string}
 
 \item{table_name}{MySQL table to be updated as string}
+
+\item{get_query_string}{TRUE/FALSE if TRUE the query string is returned instead of the results, defaults to FALSE#'}
 }
 \value{
 Either a dataframe with the result from \code{RMySQL::dbSendQuery()} or FALSE
@@ -23,5 +32,6 @@ Gets the results of a table in a MOVES database and all associated lookup tables
 }
 \examples{
 getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "movesoutput")
-getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "rateperdistance")
+getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "rateperdistance", get_query_string = TRUE)
+getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "movesoutput", moves_run_id = 3)
 }

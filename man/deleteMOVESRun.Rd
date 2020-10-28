@@ -4,14 +4,23 @@
 \alias{deleteMOVESRun}
 \title{deleteMOVESRun}
 \usage{
-deleteMOVESRun(dbconn, movesdb_name, outputdb_name, movesrunid)
+deleteMOVESRun(dbconn, outputdb_name, movesrunid)
 }
 \arguments{
-\item{movesrunid}{}
+\item{dbconn}{MySQL db connection}
+
+\item{outputdb_name}{MySQL county database to be updated as string.}
+
+\item{movesrunid}{MOVESRunID for rows to be deleted}
 }
 \value{
 
+
+TRUE if succesful, FALSE otherwise
 }
 \description{
 deleteMOVESRun
+}
+\examples{
+deleteMOVESRun(dbconn, outputdb_name, 6)
 }

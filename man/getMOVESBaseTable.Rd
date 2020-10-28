@@ -4,7 +4,7 @@
 \alias{getMOVESBaseTable}
 \title{getMOVESBaseTable}
 \usage{
-getMOVESBaseTable(dbconn, movesdb_name, table_name)
+getMOVESBaseTable(dbconn, movesdb_name, table_name, get_query_string = FALSE)
 }
 \arguments{
 \item{dbconn}{MySQL db connection}
@@ -12,6 +12,8 @@ getMOVESBaseTable(dbconn, movesdb_name, table_name)
 \item{movesdb_name}{MySQL default database to be updated as string}
 
 \item{table_name}{MySQL table to be updated as string}
+
+\item{get_query_string}{TRUE/FALSE if TRUE the query string is returned instead of the results, defaults to FALSE}
 }
 \value{
 Either a dataframe with the result from \code{RMySQL::dbSendQuery()} or FALSE

@@ -4,20 +4,23 @@
 \alias{renumberMOVESRun}
 \title{renumberMOVESRun}
 \usage{
-renumberMOVESRun(
-  dbconn,
-  movesdb_name,
-  outputdb_name,
-  oldmovesrunid,
-  newmovesrunid
-)
+renumberMOVESRun(dbconn, outputdb_name, oldmovesrunid, newmovesrunid)
 }
 \arguments{
-\item{newmovesrunid}{}
+\item{dbconn}{MySQL db connection}
+
+\item{outputdb_name}{MySQL county database to be updated as string.}
+
+\item{oldmovesrunid}{MOVESRunID for rows to be moved}
+
+\item{newmovesrunid}{MOVESRunID for where rows are to be moved}
 }
 \value{
-
+TRUE if succesful, FALSE otherwise
 }
 \description{
 renumberMOVESRun
+}
+\examples{
+renumberMOVESRun(dbconn, outputdb_name, 6, 4)
 }

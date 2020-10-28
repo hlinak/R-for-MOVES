@@ -4,7 +4,13 @@
 \alias{getMOVESInputTable}
 \title{getMOVESInputTable}
 \usage{
-getMOVESInputTable(dbconn, movesdb_name, countydb_name, table_name)
+getMOVESInputTable(
+  dbconn,
+  movesdb_name,
+  countydb_name,
+  table_name,
+  get_query_string = FALSE
+)
 }
 \arguments{
 \item{dbconn}{MySQL db connection}
@@ -14,6 +20,8 @@ getMOVESInputTable(dbconn, movesdb_name, countydb_name, table_name)
 \item{countydb_name}{MySQL county database to be updated as string}
 
 \item{table_name}{MySQL table to be updated as string}
+
+\item{get_query_string}{TRUE/FALSE if TRUE the query string is returned instead of the results, defaults to FALSE}
 }
 \value{
 Either a dataframe with the result from \code{RMySQL::dbSendQuery()} or FALSE
