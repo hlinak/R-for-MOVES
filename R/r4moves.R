@@ -37,7 +37,7 @@ queryBuilder <- function (movesdb_name,
                           double_join_tables_l = c(),
                           double_join_tables_r = c(),
                           double_join_columns = c(),
-                          moves_run_id = False) {
+                          moves_run_id = FALSE) {
   query <- "select "
   for(c in unique_columns) { query <- paste(query, c, ", ", sep="") }
   for(j in join_tables) { query <- paste(query, j, ".* , ", sep="") }
