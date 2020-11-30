@@ -141,7 +141,7 @@ readRunspec <- function(runspecLocation) {
 #' @examples
 #' getRunspecValue(rs, "//scaleinputdatabase")
 getRunspecValue <- function(runspec, xpathsLocation) {
-  return(vxmlValue(XML::getNodeSet(rs, xpathsLocation)))
+  return(XML::xmlValue(XML::getNodeSet(rs, xpathsLocation)))
 }
 
 #' setRunspecValue
@@ -199,12 +199,10 @@ addRunspecNode <- function(runspec, xpathsLocation, childName, value = NULL, att
 #' @export
 #'
 #' @examples
-#' addRunspecNode(rs, "//databaseselections//databaseselection", )
-removeRunspecNode <- function(runspec, xpathsLocation, chaneName) {
+#' addRunspecNode(rs, "//timespan//month")
+removeRunspecNode <- function(runspec, xpathsLocation) {
   ns <- XML::getNodeSet(runspec, xpathsLocation)
-  lapply(ns, function(n) {
-    XML::addChildren(n, c(XML::newXMLNode(childName)))
-  })
+  XML::removeNodes(ns, xpathsLocation)
   return(ns)
 }
 
@@ -668,7 +666,7 @@ getMOVESInputTable <- function(dbconn, movesdb_name, countydb_name, table_name, 
 #' getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "rateperdistance", get_query_string = TRUE)
 #' getMOVESOutputTable(dbconn, movesdb_name, outputdb_name, "movesoutput", moves_run_id = 3)
 getMOVESOutputTable <- function(dbconn, movesdb_name, outputdb_name, table_name, get_query_string=FALSE, moves_run_id=FALSE) {
-  if(table_name == "activitytype") { return(getActivityType(dbconn, movesdb_name, outputdb_name, get_query_string, moves_run_id)) }
+  if(table_name == "activitytype") { return(getActivityType(dbconn, movesdb_name, outputdb_name, get_query_string)) }
   if(table_name == "baserateoutput") { return(getBaseRateOutput(dbconn, movesdb_name, outputdb_name, get_query_string, moves_run_id)) }
   if(table_name == "baserateunits") { return(getBaseRateUnits(dbconn, movesdb_name, outputdb_name, get_query_string, moves_run_id)) }
   if(table_name == "movesactivity") { return(getMOVESActivityOutput(dbconn, movesdb_name, outputdb_name, get_query_string, moves_run_id)) }
