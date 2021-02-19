@@ -750,7 +750,7 @@ getHotellingActivityDistribution <- function(dbconn, movesdb_name, countydb_name
 getHotellingHours <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
   if(!checkTable(dbconn,countydb_name,"hotellinghours")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID as Year", "hotellingHours","isUserInput"),"hotellinghours",c("hourday","monthofanyyear","sourceusetype","zone"),c("hourDayID","monthID", "sourceTypeID","zoneID"),c("hourday"),c("dayofanyweek"),c("dayID")), get_query_string))
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID as year", "hotellingHours","isUserInput"),"hotellinghours",c("hourday","monthofanyyear","sourceusetype","zone"),c("hourDayID","monthID", "sourceTypeID","zoneID"),c("hourday"),c("dayofanyweek"),c("dayID")), get_query_string))
 }
 
 getHourVMTFraction <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
@@ -762,25 +762,25 @@ getHourVMTFraction <- function(dbconn, movesdb_name, countydb_name, get_query_st
 getHPMSVtypeDay <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
   if(!checkTable(dbconn,countydb_name,"hpmsvtypeday")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID as Year"),"hpmsvtypeday",c("dayofanyweek","monthofanyyear","hpmsvtype"),c("dayID","monthID","HPMSVTypeID")), get_query_string))
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID as year"),"hpmsvtypeday",c("dayofanyweek","monthofanyyear","hpmsvtype"),c("dayID","monthID","HPMSVTypeID")), get_query_string))
 }
 
 getHPMSVtypeYear <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
   if(!checkTable(dbconn,countydb_name,"hpmsvtypeyear")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID as Year","VMTGrowthFactor", "HPMSBaseYearVMT"),"hpmsvtypeyear",c("hpmsvtype"),c("HPMSVTypeID")), get_query_string))
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID as year","VMTGrowthFactor", "HPMSBaseYearVMT"),"hpmsvtypeyear",c("hpmsvtype"),c("HPMSVTypeID")), get_query_string))
 }
 
 getIMCoverage <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
   if(!checkTable(dbconn,countydb_name,"imcoverage")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID","inspectFreq","IMProgramID", "begModelYearID", "endModelYearID", "useIMyn", "complianceFactor"),"imcoverage",c("pollutantprocessassoc","state", "county", "sourceusetype", "fueltype", "imteststandards"),c("polProcessID","stateID","countyID", "sourceTypeID", "fuelTypeID", "testStandardsID"),c("pollutantprocessassoc","pollutantprocessassoc"),c("pollutant","emissionprocess"),c("pollutantID","processID")), get_query_string))
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID as year","inspectFreq","IMProgramID", "begModelYearID", "endModelYearID", "useIMyn", "complianceFactor"),"imcoverage",c("pollutantprocessassoc","state", "county", "sourceusetype", "fueltype", "imteststandards"),c("polProcessID","stateID","countyID", "sourceTypeID", "fuelTypeID", "testStandardsID"),c("pollutantprocessassoc","pollutantprocessassoc"),c("pollutant","emissionprocess"),c("pollutantID","processID")), get_query_string))
 }
 
 getImportStartsOpmodeDistribution <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
   if(!checkTable(dbconn,countydb_name,"importstartsopmodedistribution")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID as Year", "hotellingHours","isUserInput"),"importstartsopmodedistribution",c("hourday","monthofanyyear","sourceusetype","zone"),c("hourDayID","monthID", "sourceTypeID","zoneID"),c("hourday"),c("dayofanyweek"),c("dayID")), get_query_string))
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID as year", "hotellingHours","isUserInput"),"importstartsopmodedistribution",c("hourday","monthofanyyear","sourceusetype","zone"),c("hourDayID","monthID", "sourceTypeID","zoneID"),c("hourday"),c("dayofanyweek"),c("dayID")), get_query_string))
 }
 
 getMonth <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
@@ -822,13 +822,13 @@ getRoadTypeDistribution <- function(dbconn, movesdb_name, countydb_name, get_que
 getSourceTypeAgeDistribution <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
   if(!checkTable(dbconn,countydb_name,"sourcetypeagedistribution")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID", "ageFraction"),"sourcetypeagedistribution",c("agecategory","sourceusetype"),c("ageID","sourceTypeID")), get_query_string))
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID as year", "ageFraction"),"sourcetypeagedistribution",c("agecategory","sourceusetype"),c("ageID","sourceTypeID")), get_query_string))
 }
 
 getSourceTypeDayVMT <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
   if(!checkTable(dbconn,countydb_name,"sourcetypedayVMT")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID", "VMT"),"sourcetypedayVMT",c("dayofanyweek","monthofanyyear","sourceusetype"),c("dayID","monthID", "sourceTypeID")), get_query_string))
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID as year", "VMT"),"sourcetypedayVMT",c("dayofanyweek","monthofanyyear","sourceusetype"),c("dayID","monthID", "sourceTypeID")), get_query_string))
 }
 
 getSourceTypeYear <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {

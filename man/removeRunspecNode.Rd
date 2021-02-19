@@ -4,7 +4,7 @@
 \alias{removeRunspecNode}
 \title{RemoveRunspecNode}
 \usage{
-removeRunspecNode(runspec, xpathsLocation, chaneName)
+removeRunspecNode(runspec, xpathsLocation)
 }
 \arguments{
 \item{runspec}{\code{XML::xmlParse()} object}
@@ -19,5 +19,5 @@ removeRunspecNode(runspec, xpathsLocation, chaneName)
 Sets an attibute in a runspec \code{XML::xmlParse()} object.
 }
 \examples{
-addRunspecNode(rs, "//databaseselections//databaseselection", )
+addRunspecNode(rs, "//timespan//month")
 }

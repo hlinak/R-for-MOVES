@@ -10,7 +10,7 @@ getMOVESOutputTable(
   outputdb_name,
   table_name,
   get_query_string = FALSE,
-  moves_run_id = FALSE
+  moves_run_id = -1
 )
 }
 \arguments{
