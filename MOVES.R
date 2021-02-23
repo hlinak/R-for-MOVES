@@ -19,7 +19,8 @@ outputdb_name <- 'c11001y2017_2016clrp_out'
 
 moves_location <- "C:\\Users\\Public\\EPA\\MOVES\\MOVES2014b"
 
-dbconn <- makeDBConnection(user = 'root', password=password)
+dbconn <- makeDBConnection(user = 'root', password=password, dbapi="MySQ")
+dbconn <- makeDBConnection(user = 'root', password=password, dbapi="MySQL")
 
 getMOVESOutputTable(dbconn, movesdb_name , "dc_imsip_v45_2020_amnd_ozn_dc_2025_out_c", "movesrun")
 deleteMOVESRun(dbconn, "dc_imsip_v45_2020_amnd_ozn_dc_2025_out_c", 6)

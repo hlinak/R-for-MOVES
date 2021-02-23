@@ -16,7 +16,7 @@ getMOVESBaseTable(dbconn, movesdb_name, table_name, get_query_string = FALSE)
 \item{get_query_string}{TRUE/FALSE if TRUE the query string is returned instead of the results, defaults to FALSE}
 }
 \value{
-Either a dataframe with the result from \code{RMySQL::dbSendQuery()} or FALSE
+Either a dataframe with the result from \code{dbSendQuery()} or FALSE
 }
 \description{
 Gets the results of a table in a MOVES database.

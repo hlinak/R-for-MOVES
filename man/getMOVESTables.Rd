@@ -12,7 +12,7 @@ getMOVESTables(dbconn, db_name)
 \item{movesdb_name}{MySQL default database to be updated as string}
 }
 \value{
-Either a dataframe with the result from \code{RMySQL::dbSendQuery()} or FALSE
+Either a dataframe with the result from \code{dbSendQuery()} or FALSE
 }
 \description{
 Gets the results of a table in a MOVES database.

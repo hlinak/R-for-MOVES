@@ -7,4 +7,4 @@ call setenv.bat
 call ant compile
 rem -----------------------------------------------------------
 echo Running test_11001_2017_test.mrs
-java -Xmx512M gov.epa.otaq.moves.master.commandline.MOVESCommandLine -r "C:\Users\joseph.jakuta\Desktop\test_runspec_new.mrs"
+java -Xmx512M gov.epa.otaq.moves.master.commandline.MOVESCommandLine -r "test_files\test_runspec_new.mrs"

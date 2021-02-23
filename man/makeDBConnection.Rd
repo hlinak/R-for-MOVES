@@ -4,7 +4,7 @@
 \alias{makeDBConnection}
 \title{makeDBConnection}
 \usage{
-makeDBConnection(user, password, host = "localhost")
+makeDBConnection(user, password, host = "localhost", dbapi = "MariaDB")
 }
 \arguments{
 \item{user}{mysql user name}
@@ -14,10 +14,10 @@ makeDBConnection(user, password, host = "localhost")
 \item{host}{mysql host, default to localhost}
 }
 \value{
-\code{RMySQL::dbConnect()}
+\code{dbConnect()}
 }
 \description{
-A wrapper for \code{RMySQL::dbConnect()}
+A wrapper for \code{dbConnect()}
 }
 \examples{
 makeDBConnection("mysql_user", "password12345")

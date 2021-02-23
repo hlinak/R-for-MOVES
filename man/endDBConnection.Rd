@@ -10,10 +10,10 @@ endDBConnection(dbconn)
 \item{dbconn}{}
 }
 \value{
-BOOLEAN result of \code{RMySQL::dbDisconnect()}
+BOOLEAN result of \code{dbDisconnect()}
 }
 \description{
-A wrapper for \code{RMySQL::dbDisconnect()}
+A wrapper for \code{dbDisconnect()}
 }
 \examples{
 endDBConnection(dbconn)
