@@ -95,17 +95,19 @@ noWeekDays <- function(sd, ed, weekend=c("Saturday", "Sunday")) {
 #' @examples
 #' makeDBConnection("mysql_user", "password12345")
 #' makeDBConnection("mysql_user", "password12345", host="168.1.1.1")
-makeDBConnection <- function(user, password, host='localhost', dbapi='MariaDB'){
+makeDBConnection <- function(user, password, host='localhost', port=3306, dbapi='MariaDB'){
   if(dbapi == 'MariaDB') {
     return(RMariaDB::dbConnect(RMariaDB::MariaDB(),
                    user=user,
                    password=password,
-                   host=host))
+                   host=host,
+                   port=port))
   } else if(dbapi == 'MySQL') {
     return(RMySQL::dbConnect(RMySQL::MySQL(),
                              user=user,
                              password=password,
-                             host=host))
+                             host=host,
+                             port=port))
   } else {
     stop(paste(dbapi, " is not a valid option, must be 'MariaDB' or 'MySQL'", sep=""))
     return(FALSE)
@@ -370,7 +372,9 @@ processGetQuery <- function(dbconn, query, get_query_string=FALSE) {
     return(query)
   } else {
     if(as.character(attributes(dbconn)$class) == "MariaDBConnection") {
-      data <- suppressWarnings(RMariaDB::fetch(RMySQL::dbSendQuery(dbconn, query), n=-1))
+      qres <- RMariaDB::dbSendQuery(dbconn, query)
+      data <- suppressWarnings(RMariaDB::dbFetch(qres, n=-1))
+      RMariaDB::dbClearResult(qres)
       return(data[,!duplicated(colnames(data))])
     } else {
       data <- suppressWarnings(RMySQL::fetch(RMySQL::dbSendQuery(dbconn, query), n=-1))
@@ -391,7 +395,10 @@ databaseExists <- function(dbconn, db_name) {
     }
   }
   if(as.character(attributes(dbconn)$class) == "MariaDBConnection") {
-    return(nrow(RMariaDB::fetch(RMariaDB::dbSendQuery(dbconn, paste("SHOW DATABASES LIKE '",db_name,"';", sep="")),n=-1))>0)
+    qres <- RMariaDB::dbSendQuery(dbconn, paste("SHOW DATABASES LIKE '",db_name,"';", sep=""))
+    numrows <- nrow(RMariaDB::dbFetch(qres,n=-1))
+    RMariaDB::dbClearResult(qres)
+    return(numrows>0)
   } else {
     return(nrow(RMySQL::fetch(RMySQL::dbSendQuery(dbconn, paste("SHOW DATABASES LIKE '",db_name,"';", sep="")),n=-1))>0)
   }
@@ -399,7 +406,10 @@ databaseExists <- function(dbconn, db_name) {
 
 tableExists <- function(dbconn, db_name, table_name) {
   if(as.character(attributes(dbconn)$class) == "MariaDBConnection") {
-    return(nrow(RMariaDB::fetch(RMariaDB::dbSendQuery(dbconn, paste("SHOW TABLES IN ",db_name," LIKE '", table_name, "';", sep="")),n=-1))>0)
+    qres <- RMariaDB::dbSendQuery(dbconn, paste("SHOW TABLES IN ",db_name," LIKE '", table_name, "';", sep=""))
+    numrows <- nrow(RMariaDB::dbFetch(qres,n=-1))
+    RMariaDB::dbClearResult(qres)
+    return(numrows>0)
   } else {
     return(nrow(RMySQL::fetch(RMySQL::dbSendQuery(dbconn, paste("SHOW TABLES IN ",db_name," LIKE '", table_name, "';", sep="")),n=-1))>0)
   }
@@ -448,7 +458,7 @@ copyMOVESDatabase <- function(dbconn, db_from_name, db_to_name) {
     } else {
       if(as.character(attributes(dbconn)$class) == "MariaDBConnection") {
         RMariaDB::dbSendQuery(dbconn, paste("CREATE DATABASE ",db_to_name, sep=""))
-        table_data <- RMariaDB::fetch(RMariaDB::dbSendQuery(dbconn, paste("SHOW TABLES IN ",db_from_name, sep="")),n=-1)
+        table_data <- RMariaDB::dbFetch(RMariaDB::dbSendQuery(dbconn, paste("SHOW TABLES IN ",db_from_name, sep="")),n=-1)
         for(row in table_data) {
           for(table_name in row) {
             print(paste("Creating table:", table_name))
@@ -497,7 +507,7 @@ replaceMOVESTable <- function(dbconn, db_name, table_name, data) {
   if(databaseExists(dbconn, db_name)) {
     if(tableExists(dbconn, db_name, table_name)) {
       if(as.character(attributes(dbconn)$class) == "MariaDBConnection") {
-        column_data <- RMariaDB::fetch(RMariaDB::dbSendQuery(dbconn, paste("DESCRIBE ",db_name,".",table_name, sep="")))
+        column_data <- RMariaDB::dbFetch(RMariaDB::dbSendQuery(dbconn, paste("DESCRIBE ",db_name,".",table_name, sep="")))
       } else {
         column_data <- RMySQL::fetch(RMySQL::dbSendQuery(dbconn, paste("DESCRIBE ",db_name,".",table_name, sep="")))
       }
@@ -545,8 +555,8 @@ replaceMOVESTable <- function(dbconn, db_name, table_name, data) {
 renumberMOVESRun <- function(dbconn, outputdb_name, oldmovesrunid, newmovesrunid) {
   if(databaseExists(dbconn, outputdb_name)) {
     if(as.character(attributes(dbconn)$class) == "MariaDBConnection") {
-      if(nrow(suppressWarnings(RMariaDB::fetch(RMariaDB::dbSendQuery(dbconn, paste("select * from ",outputdb_name,".movesrun WHERE MOVESRunID = ", oldmovesrunid, sep=""))))) > 0) {
-        if(nrow(suppressWarnings(RMariaDB::fetch(RMariaDB::dbSendQuery(dbconn, paste("select * from ",outputdb_name,".movesrun WHERE MOVESRunID = ", newmovesrunid, sep=""))))) == 0) {
+      if(nrow(suppressWarnings(RMariaDB::dbFetch(RMariaDB::dbSendQuery(dbconn, paste("select * from ",outputdb_name,".movesrun WHERE MOVESRunID = ", oldmovesrunid, sep=""))))) > 0) {
+        if(nrow(suppressWarnings(RMariaDB::dbFetch(RMariaDB::dbSendQuery(dbconn, paste("select * from ",outputdb_name,".movesrun WHERE MOVESRunID = ", newmovesrunid, sep=""))))) == 0) {
           for(table in c("baserateoutput", "baserateunits", "bundletracking", "movesrun",
                          "movesactivityoutput", "movesoutput", "moveseventlog", "moveserror",
                          "movestablesused", "movesworkersused", "rateperdistance", "rateperhour",
@@ -554,7 +564,7 @@ renumberMOVESRun <- function(dbconn, outputdb_name, oldmovesrunid, newmovesrunid
             suppressWarnings(RMariaDB::dbSendQuery(dbconn, paste("update ",outputdb_name,".",table," set MOVESRunID = ", newmovesrunid, " where MOVESRunId = ", oldmovesrunid, sep='')))
           }
 
-          max_id <- suppressWarnings(RMariaDB::fetch(RMariaDB::dbSendQuery(dbconn, paste("SELECT MAX(MOVESRunID) FROM ",outputdb_name,".movesrun;", sep=""))))
+          max_id <- suppressWarnings(RMariaDB::dbFetch(RMariaDB::dbSendQuery(dbconn, paste("SELECT MAX(MOVESRunID) FROM ",outputdb_name,".movesrun;", sep=""))))
           suppressWarnings(RMariaDB::dbSendQuery(dbconn, paste("ALTER TABLE ",outputdb_name,".movesrun AUTO_INCREMENT = ",as.character(as.integer(max_id[1][1])+1), sep="")))
           return(TRUE)
         } else {
@@ -607,14 +617,14 @@ renumberMOVESRun <- function(dbconn, outputdb_name, oldmovesrunid, newmovesrunid
 deleteMOVESRun <- function(dbconn, outputdb_name, movesrunid) {
   if(databaseExists(dbconn, outputdb_name)) {
     if(as.character(attributes(dbconn)$class) == "MariaDBConnection") {
-      if(nrow(suppressWarnings(RMariaDB::fetch(RMariaDB::dbSendQuery(dbconn, paste("select * from ",outputdb_name,".movesrun WHERE MOVESRunID = ", movesrunid, sep=""))))) > 0) {
+      if(nrow(suppressWarnings(RMariaDB::dbFetch(RMariaDB::dbSendQuery(dbconn, paste("select * from ",outputdb_name,".movesrun WHERE MOVESRunID = ", movesrunid, sep=""))))) > 0) {
         for(table in c("baserateoutput", "baserateunits", "bundletracking", "movesrun",
                        "movesactivityoutput", "movesoutput", "moveseventlog", "moveserror",
                        "movestablesused", "movesworkersused", "rateperdistance", "rateperhour",
                        "rateperprofile", "rateperstart", "ratepervehicle", "startspervehicle")) {
           suppressWarnings(RMariaDB::dbSendQuery(dbconn, paste("delete from ",outputdb_name,".", table," where MOVESRunID = ", movesrunid, sep='')))
         }
-        max_id <- suppressWarnings(RMariaDB::fetch(RMariaDB::dbSendQuery(dbconn, paste("SELECT MAX(MOVESRunID) FROM ",outputdb_name,".movesrun;", sep=""))))
+        max_id <- suppressWarnings(RMariaDB::dbFetch(RMariaDB::dbSendQuery(dbconn, paste("SELECT MAX(MOVESRunID) FROM ",outputdb_name,".movesrun;", sep=""))))
         suppressWarnings(RMariaDB::dbSendQuery(dbconn, paste("ALTER TABLE ",outputdb_name,".movesrun AUTO_INCREMENT = ",as.character(as.integer(max_id[1][1])+1), sep="")))
         return(TRUE)
       } else {
@@ -704,7 +714,7 @@ getMOVESBaseTable <- function(dbconn, movesdb_name, table_name, get_query_string
 #' getMOVESInputTable(dbconn, movesdb_name, countydb_name, "imcoverage")
 getMOVESInputTable <- function(dbconn, movesdb_name, countydb_name, table_name, get_query_string = FALSE) {
   if(table_name == "auditlog") { return(getAuditLog(dbconn, movesdb_name, countydb_name, get_query_string)) }
-  if(table_name == "avgspeedstribution") { return(getAverageSpeedDistribution(dbconn, movesdb_name, countydb_name, get_query_string)) }
+  if(table_name == "avgspeeddistribution") { return(getAverageSpeedDistribution(dbconn, movesdb_name, countydb_name, get_query_string)) }
   if(table_name == "avft") { return(getAVFT(dbconn, movesdb_name, countydb_name, get_query_string)) }
   if(table_name == "county") { return(getCounty(dbconn, movesdb_name, countydb_name, get_query_string)) }
   if(table_name == "dayvmtfraction") { return(getDayVMTFraction(dbconn, movesdb_name, countydb_name, get_query_string)) }
@@ -712,11 +722,18 @@ getMOVESInputTable <- function(dbconn, movesdb_name, countydb_name, table_name, 
   if(table_name == "fuelsupply") { return(getFuelSupply(dbconn, movesdb_name, countydb_name, get_query_string)) }
   if(table_name == "fuelsupplyyear") { return(getFuelSupplyYear(dbconn, movesdb_name, countydb_name, get_query_string)) }
   if(table_name == "fuelusagefraction") { return(getFuelUsageFraction(dbconn, movesdb_name, countydb_name, get_query_string)) }
-  if(table_name == "hotelingactivitydistribution") { return(getHotellingActivityDistribution(dbconn, movesdb_name, countydb_name, get_query_string)) }
-  if(table_name == "hotelinghours") { return(getHotellingHours(dbconn, movesdb_name, countydb_name, get_query_string)) }
+  if(table_name == "hotellingactivitydistribution") { return(getHotellingActivityDistribution(dbconn, movesdb_name, countydb_name, get_query_string)) }
+  if(table_name == "hotellingagefraction") { return(getHotellingAgeFraction(dbconn, movesdb_name, countydb_name, get_query_string)) }
+  if(table_name == "hotellinghours") { return(getHotellingHours(dbconn, movesdb_name, countydb_name, get_query_string)) }
+  if(table_name == "hotellinghourfraction") { return(getHotellingHourFraction(dbconn, movesdb_name, countydb_name, get_query_string)) }
+  if(table_name == "hotellinghoursperday") { return(getHotellingHoursPerDay(dbconn, movesdb_name, countydb_name, get_query_string)) }
+  if(table_name == "hotellingmonthadjust") { return(getHotellingMonthAdjust(dbconn, movesdb_name, countydb_name, get_query_string)) }
   if(table_name == "hourvmtfraction") { return(getHourVMTFraction(dbconn, movesdb_name, countydb_name, get_query_string)) }
   if(table_name == "hpmsvtypeday") { return(getHPMSVtypeDay(dbconn, movesdb_name, countydb_name, get_query_string)) }
   if(table_name == "hpmsvtypeyear") { return(getHPMSVtypeYear(dbconn, movesdb_name, countydb_name, get_query_string)) }
+  if(table_name == "idledayadjust") { return(getIdleDayAdjust(dbconn, movesdb_name, countydb_name, get_query_string)) }
+  if(table_name == "idlemodelyeargrouping") { return(getIdleModelYearGrouping(dbconn, movesdb_name, countydb_name, get_query_string)) }
+  if(table_name == "idlemonthadjust") { return(getIdleMonthAdjust(dbconn, movesdb_name, countydb_name, get_query_string)) }
   if(table_name == "imcoverage") { return(getIMCoverage(dbconn, movesdb_name, countydb_name, get_query_string)) }
   if(table_name == "importstartsopmodedistribution") { return(getImportStartsopmodeDistribution(dbconn, movesdb_name, countydb_name, get_query_string)) }
   if(table_name == "month") { return(getMonth(dbconn, movesdb_name, countydb_name, get_query_string)) }
@@ -730,14 +747,19 @@ getMOVESInputTable <- function(dbconn, movesdb_name, countydb_name, table_name, 
   if(table_name == "sourcetypeyear") { return(getSourceTypeYear(dbconn, movesdb_name, countydb_name, get_query_string)) }
   if(table_name == "sourcetypeyearvmt") { return(getSourceTypeYearVMT(dbconn, movesdb_name, countydb_name, get_query_string)) }
   if(table_name == "starts") { return(getStarts(dbconn, movesdb_name, countydb_name, get_query_string)) }
+  if(table_name == "startsageadjustment") { return(getStartsAgeAdjustment(dbconn, movesdb_name, countydb_name, get_query_string)) }
   if(table_name == "startshourfraction") { return(getStartsHourFraction(dbconn, movesdb_name, countydb_name, get_query_string)) }
   if(table_name == "startsmonthadjust") { return(getStartsMonthAdjust(dbconn, movesdb_name, countydb_name, get_query_string)) }
+  if(table_name == "startsopmodedistribution") { return(getStartsOpModeDistribution(dbconn, movesdb_name, countydb_name, get_query_string)) }
   if(table_name == "startsperday") { return(getStartsPerDay(dbconn, movesdb_name, countydb_name, get_query_string)) }
+  if(table_name == "startsperdaypervehicle") { return(getStartsPerDayPerVehicle(dbconn, movesdb_name, countydb_name, get_query_string)) }
   if(table_name == "startssourcetypefraction") { return(getStartsSourceTypeFraction(dbconn, movesdb_name, countydb_name, get_query_string)) }
+  if(table_name == "startsperyear") { return(getStartsPerYear(dbconn, movesdb_name, countydb_name, get_query_string)) }
   if(table_name == "state") { return(getState(dbconn, movesdb_name, countydb_name, get_query_string)) }
+  if(table_name == "totalidlefraction") { return(getTotalIdleFaction(dbconn, movesdb_name, countydb_name, get_query_string)) }
   if(table_name == "year") { return(getYear(dbconn, movesdb_name, countydb_name, get_query_string)) }
   if(table_name == "zone") { return(getZone(dbconn, movesdb_name, countydb_name, get_query_string)) }
-  if(table_name == "zonemonthtype") { return(getZoneMonthType(dbconn, movesdb_name, countydb_name, get_query_string)) }
+  if(table_name == "zonemonthhour") { return(getZoneMonthHour(dbconn, movesdb_name, countydb_name, get_query_string)) }
   if(table_name == "zoneroadtype") { return(getZoneRoadType(dbconn, movesdb_name, countydb_name, get_query_string)) }
   warning("Table: ", table_name, " has either not been coded into r4moves or is not a proper MOVES input table.")
   return(FALSE)
@@ -782,220 +804,404 @@ getMOVESOutputTable <- function(dbconn, movesdb_name, outputdb_name, table_name,
 
 #county db tables
 getAuditLog <- function(dbconn, movesdb_name, countydb_name, get_query_string = FALSE) {
+  table_name="audit_log"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name, "auditlog")) { return(FALSE) }
-  return(processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name, c("whenHappened","importerName","briefDescription","fullDescription"),"auditlog"), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return(processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name, c("whenHappened","importerName","briefDescription","fullDescription"),table_name), get_query_string))
 }
 
 getAVFT <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="avft"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name, "avft")) { return(FALSE) }
-  return(processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name, c("modelYearID", "fuelEngFraction"), "avft", c("enginetech","fueltype","sourceusetype"), c("engTechID","fuelTypeID","sourceTypeID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return(processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name, c("modelYearID", "fuelEngFraction"), table_name, c("enginetech","fueltype","sourceusetype"), c("engTechID","fuelTypeID","sourceTypeID")), get_query_string))
 }
 
 getAverageSpeedDistribution <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="avgspeeddistribution"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"avgspeeddistribution")) { return(FALSE) }
-  return(processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("avgSpeedFraction"),"avgspeeddistribution",c("hourday","avgspeedbin","roadtype","sourceusetype"),c("hourDayID","avgSpeedBinID","roadTypeID","sourceTypeID"),c("hourday","sourceusetype"),c("dayofanyweek","hpmsvtype"),c("dayID","HPMSVtypeID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return(processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("avgSpeedFraction"),table_name,c("hourday","avgspeedbin","roadtype","sourceusetype"),c("hourDayID","avgSpeedBinID","roadTypeID","sourceTypeID"),c("hourday","sourceusetype"),c("dayofanyweek","hpmsvtype"),c("dayID","HPMSVtypeID")), get_query_string))
 }
 
 getCounty <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="county"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"county")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("countyID", "countyName", "altitude", "GPAFract", "barometricPressure", "barometricPressureCV"),"county",c("state"),c("stateID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  if(as.integer(substr(movesdb_name, 8, 15))  >= 20201105) {
+    return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("countyID", "countyName", "altitude", "GPAFract", "barometricPressure", "barometricPressureCV", "msa"),table_name,c("state"),c("stateID", "countyTypeID")), get_query_string))
+  } else {
+    return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("countyID", "countyName", "altitude", "GPAFract", "barometricPressure", "barometricPressureCV"),table_name,c("state"),c("stateID")), get_query_string))
+  }
 }
 
 getDayVMTFraction <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="dayvmtfraction"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"dayvmtfraction")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("dayVMTFraction"),"dayvmtfraction",c("dayofanyweek","monthofanyyear","roadtype","sourceusetype"),c("dayID","monthID", "roadTypeID","sourceTypeID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("dayVMTFraction"),table_name,c("dayofanyweek","monthofanyyear","roadtype","sourceusetype"),c("dayID","monthID", "roadTypeID","sourceTypeID")), get_query_string))
 }
 
 getFuelFormulation <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="fuelformulation"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"fuelformulation")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("fuelFormulationID", "RVP", "sulfurLevel", "ETOHVolume", "MTBEVolume", "ETBEVolume", "TAMEVolume", "aromaticContent", "olefinContent", "benzeneContent", "e200", "e300", "volToWtPercentOxy", "BioDieselEsterVolume", "CetaneIndex", "PAHContent", "T50", "T90"),"fuelformulation",c("fuelsubtype"),c("fuelSubTypeID"),c("fuelsubtype"),c("fueltype"),c("fuelTypeID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("fuelFormulationID", "RVP", "sulfurLevel", "ETOHVolume", "MTBEVolume", "ETBEVolume", "TAMEVolume", "aromaticContent", "olefinContent", "benzeneContent", "e200", "e300", "volToWtPercentOxy", "BioDieselEsterVolume", "CetaneIndex", "PAHContent", "T50", "T90"),table_name,c("fuelsubtype"),c("fuelSubTypeID"),c("fuelsubtype"),c("fueltype"),c("fuelTypeID")), get_query_string))
 }
 
 getFuelSupply <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="fuelsupply"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"fuelsupply")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("monthGroupID", "fuelRegionID","marketShare", "marketShareCV"),"fuelsupply",c("fuelformulation"),c("fuelFormulationID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("monthGroupID","fuelYearID","fuelRegionID","marketShare", "marketShareCV"),table_name,c("fuelformulation"),c("fuelFormulationID")), get_query_string))
 }
 
 getFuelSupplyYear <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="fuelsupplyyear"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"fuelsupplyyear")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("fuelYearID"),"fuelsupplyyear"), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("fuelYearID"),table_name), get_query_string))
 }
 
 getFuelUsageFraction <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="fuelusagefraction"
   #jmj this one might not be able to rely on query builder to be done properly since the join table columns aren't identical between tables
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"fuelusagefraction")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("fuelYearID", "sourceBinFuelTypeID", "fuelSupplyFuelTypeID","usageFraction"),"fuelusagefraction",c("county","modelyeargroup"),c("countyID","modelYearGroupID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("fuelYearID", "sourceBinFuelTypeID", "fuelSupplyFuelTypeID","usageFraction"),table_name,c("county","modelyeargroup"),c("countyID","modelYearGroupID")), get_query_string))
 }
 
 getHotellingActivityDistribution <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="hotellingactivitydistribution"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"hotellingactivitydistribution")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("beginModelYearID", "endModelYearID","opModeFraction"),"hotellingactivitydistribution",c("operatingmode"),c("opModeID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  if(as.integer(substr(movesdb_name, 8, 15))  >= 20201105) {
+    return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("beginModelYearID", "endModelYearID","opModeFraction"),table_name,c("operatingmode", "zone"),c("opModeID", "zoneID")), get_query_string))
+  } else {
+    return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("beginModelYearID", "endModelYearID","opModeFraction"),table_name,c("operatingmode"),c("opModeID")), get_query_string))
+  }
+}
+
+getHotellingAgeFraction <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="hotellingagefraction"
+  if(as.integer(substr(movesdb_name, 8, 15)) < 20201105) {
+    stop(paste(table_name, " was not implemented in this version of MOVES", sep=""))
+    return(FALSE)
+  }
+  if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("ageFraction"),table_name,c("agecategory","zone"),c("ageID","zoneID")), get_query_string))
 }
 
 getHotellingHours <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="hotellinghours"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"hotellinghours")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID", "hotellingHours","isUserInput"),"hotellinghours",c("hourday","monthofanyyear","sourceusetype","zone"),c("hourDayID","monthID", "sourceTypeID","zoneID"),c("hourday"),c("dayofanyweek"),c("dayID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID", "hotellingHours","isUserInput"),table_name,c("hourday","monthofanyyear","sourceusetype","zone"),c("hourDayID","monthID", "sourceTypeID","zoneID"),c("hourday"),c("dayofanyweek"),c("dayID")), get_query_string))
+}
+
+getHotellingHourFraction <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="hotellinghourfraction"
+  if(as.integer(substr(movesdb_name, 8, 15)) < 20201105) {
+    stop(paste(table_name, " was not implemented in this version of MOVES", sep=""))
+    return(FALSE)
+  }
+  if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("hourID","hourFraction"),table_name,c("dayofanyweek","zone"),c("dayID","zoneID")), get_query_string))
+}
+
+getHotellingHoursPerDay <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="hotellinghoursperday"
+  if(as.integer(substr(movesdb_name, 8, 15)) < 20201105) {
+    stop(paste(table_name, " was not implemented in this version of MOVES", sep=""))
+    return(FALSE)
+  }
+  if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID","hotellingHours"),table_name,c("dayofanyweek","zone"),c("dayID","zoneID")), get_query_string))
+}
+
+getHotellingMonthAdjust <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="hotellingmonthadjust"
+  if(as.integer(substr(movesdb_name, 8, 15)) < 20201105) {
+    stop(paste(table_name, " was not implemented in this version of MOVES", sep=""))
+    return(FALSE)
+  }
+  if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("monthAdjustment"),table_name,c("monthofanyyear","zone"),c("monthID","zoneID")), get_query_string))
 }
 
 getHourVMTFraction <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="hourvmtfraction"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"hourvmtfraction")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("hourID","hourVMTFraction"),"hourvmtfraction",c("dayofanyweek","roadtype","sourceusetype"),c("dayID","roadTypeID","sourceTypeID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("hourID","hourVMTFraction"),table_name,c("dayofanyweek","roadtype","sourceusetype"),c("dayID","roadTypeID","sourceTypeID")), get_query_string))
 }
 
 getHPMSVtypeDay <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="hpmsvtypeday"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"hpmsvtypeday")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID"),"hpmsvtypeday",c("dayofanyweek","monthofanyyear","hpmsvtype"),c("dayID","monthID","HPMSVTypeID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID", "VMT"),table_name,c("dayofanyweek","monthofanyyear","hpmsvtype"),c("dayID","monthID","HPMSVTypeID")), get_query_string))
 }
 
 getHPMSVtypeYear <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="hpmsvtypeyear"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"hpmsvtypeyear")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID","VMTGrowthFactor", "HPMSBaseYearVMT"),"hpmsvtypeyear",c("hpmsvtype"),c("HPMSVTypeID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID","VMTGrowthFactor", "HPMSBaseYearVMT"),table_name,c("hpmsvtype"),c("HPMSVTypeID")), get_query_string))
+}
+
+getIdleDayAdjust <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="idledayadjust"
+  if(as.integer(substr(movesdb_name, 8, 15)) < 20201105) {
+    stop(paste(table_name, " was not implemented in this version of MOVES", sep=""))
+    return(FALSE)
+  }
+  if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("idleDayAdjust"),table_name,c("dayofanyweek", "sourceusetype"),c("dayID", "sourceTypeID")), get_query_string))
+}
+
+getIdleModelYearGrouping <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="idlemodelyeargrouping"
+  if(as.integer(substr(movesdb_name, 8, 15)) < 20201105) {
+    stop(paste(table_name, " was not implemented in this version of MOVES", sep=""))
+    return(FALSE)
+  }
+  if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("minModelYearID","maxModelYearID","totalIdleFraction"),table_name,c("sourceusetype"),c("sourceTypeID")), get_query_string))
+}
+
+getIdleMonthAdjust <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="idlemonthadjust"
+  if(as.integer(substr(movesdb_name, 8, 15)) < 20201105) {
+    stop(paste(table_name, " was not implemented in this version of MOVES", sep=""))
+    return(FALSE)
+  }
+  if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
+  if(!checkTable(dbconn,countydb_name,"idlemonthadjust")) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("idleMonthAdjust"),table_name,c("monthofanyyear", "sourceusetype"),c("monthID", "sourceTypeID")), get_query_string))
 }
 
 getIMCoverage <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="imcoverage"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"imcoverage")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID","inspectFreq","IMProgramID", "begModelYearID", "endModelYearID", "useIMyn", "complianceFactor"),"imcoverage",c("pollutantprocessassoc","state", "county", "sourceusetype", "fueltype", "imteststandards"),c("polProcessID","stateID","countyID", "sourceTypeID", "fuelTypeID", "testStandardsID"),c("pollutantprocessassoc","pollutantprocessassoc"),c("pollutant","emissionprocess"),c("pollutantID","processID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID","inspectFreq","IMProgramID", "begModelYearID", "endModelYearID", "useIMyn", "complianceFactor"),table_name,c("pollutantprocessassoc","state", "county", "sourceusetype", "fueltype", "imteststandards"),c("polProcessID","stateID","countyID", "sourceTypeID", "fuelTypeID", "testStandardsID"),c("pollutantprocessassoc","pollutantprocessassoc"),c("pollutant","emissionprocess"),c("pollutantID","processID")), get_query_string))
 }
 
 getImportStartsOpmodeDistribution <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="importstartsopmodedistribution"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"importstartsopmodedistribution")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearIDr", "hotellingHours","isUserInput"),"importstartsopmodedistribution",c("hourday","monthofanyyear","sourceusetype","zone"),c("hourDayID","monthID", "sourceTypeID","zoneID"),c("hourday"),c("dayofanyweek"),c("dayID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID", "hotellingHours","isUserInput"),table_name,c("hourday","monthofanyyear","sourceusetype","zone"),c("hourDayID","monthID", "sourceTypeID","zoneID"),c("hourday"),c("dayofanyweek"),c("dayID")), get_query_string))
 }
 
 getMonth <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="month"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"month")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("monthvmtfraction","yearid","ageid","modelyearid", "idlemonthhours", "apumonthhours"),"month",c("monthofanyyear","sourceusetype"),c("monthid","sourcetypeid")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("monthvmtfraction","yearid","ageid","modelyearid", "idlemonthhours", "apumonthhours"),table_name,c("monthofanyyear","sourceusetype"),c("monthid","sourcetypeid")), get_query_string))
 }
 
 getMonthVMTFraction <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="monthvmtfraction"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"monthvmtfraction")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("monthVMTFraction"),"monthvmtfraction",c("monthofanyyear","sourceusetype"),c("monthID","sourceTypeID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("monthVMTFraction"),table_name,c("monthofanyyear","sourceusetype"),c("monthID","sourceTypeID")), get_query_string))
 }
 
 getOnRoadRetrofit <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="onroadretrofit"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"onroadretrofit")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("retrofitYearID", "beginModelYearID", "endModelYearID", "cumFractionRetrofit", "retrofitEffectiveFraction"),"onroadretrofit",c("pollutant","emissionprocess","fueltype","sourceusetype"),c("pollutantID","processID","fuelTypeID","sourceTypeID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("retrofitYearID", "beginModelYearID", "endModelYearID", "cumFractionRetrofit", "retrofitEffectiveFraction"),table_name,c("pollutant","emissionprocess","fueltype","sourceusetype"),c("pollutantID","processID","fuelTypeID","sourceTypeID")), get_query_string))
 }
 
 getOpModeDistribution <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="opmodeldistribution"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"opmodedistribution")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("linkID","opModeFraction", "opModeFractionCV"),"opmodedistribution",c("hourday","pollutantprocessassoc","roadtype","sourceusetype"),c("hourDayID","polProcessID","opModeID","sourceTypeID"),c("hourday","pollutantprocessassoc","pollutantprocessassoc"),c("dayofanyweek","pollutant","emissionprocess"),c("dayID","pollutantID","processID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("linkID","opModeFraction", "opModeFractionCV"),table_name,c("hourday","pollutantprocessassoc","roadtype","sourceusetype"),c("hourDayID","polProcessID","opModeID","sourceTypeID"),c("hourday","pollutantprocessassoc","pollutantprocessassoc"),c("dayofanyweek","pollutant","emissionprocess"),c("dayID","pollutantID","processID")), get_query_string))
 }
 
 getRoadType <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="roadtype"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"roadtype")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("roadTypID", "roadDesc", "rampFraction", "isAffectedByOnroad", "isAffectedByNonroad", "shouldDisplay"),"roadtype")), get_query_string)
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("roadTypID", "roadDesc", "rampFraction", "isAffectedByOnroad", "isAffectedByNonroad", "shouldDisplay"),table_name)), get_query_string)
 }
 
 getRoadTypeDistribution <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="roadtypedistribution"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"roadtypedistribution")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("roadTypeVMTFraction"),"roadtypedistribution",c("roadtype","sourceusetype"),c("roadTypeID","sourceTypeID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("roadTypeVMTFraction"),table_name,c("roadtype","sourceusetype"),c("roadTypeID","sourceTypeID")), get_query_string))
 }
 
 getSourceTypeAgeDistribution <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="sourcetypeagedistribution"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"sourcetypeagedistribution")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID", "ageFraction"),"sourcetypeagedistribution",c("agecategory","sourceusetype"),c("ageID","sourceTypeID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID", "ageFraction"),table_name,c("agecategory","sourceusetype"),c("ageID","sourceTypeID")), get_query_string))
 }
 
 getSourceTypeDayVMT <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="sourcetypedayvmt"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"sourcetypedayVMT")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID", "VMT"),"sourcetypedayVMT",c("dayofanyweek","monthofanyyear","sourceusetype"),c("dayID","monthID", "sourceTypeID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID", "VMT"),table_name,c("dayofanyweek","monthofanyyear","sourceusetype"),c("dayID","monthID", "sourceTypeID")), get_query_string))
 }
 
 getSourceTypeYear <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="sourcetypeyear"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"sourcetypeyear")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID", "salesGrowthFactor", "sourceTypePopulation", "migrationrate"),"sourcetypeyear",c("sourceusetype"),c("sourceTypeID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID", "salesGrowthFactor", "sourceTypePopulation", "migrationrate"),table_name,c("sourceusetype"),c("sourceTypeID")), get_query_string))
 }
 
 getSourceTypeYearVMT <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="sourcetypeyearvmt"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"sourcetypeyearVMT")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID","VMT"),"sourcetypeyearVMT",c("sourceusetype"),c("sourceTypeID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID","VMT"),table_name,c("sourceusetype"),c("sourceTypeID")), get_query_string))
 }
 
-getStartsFraction <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+getStarts <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="starts"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"starts")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID","starts","StartsCV",'isUserInput'),"starts",c("agecategory","hourday","monthofanyyear","sourceusetype","zone"),c("ageID","hourDayID","monthID","sourceTypeID","zoneID"),c("hourday","sourceusetype"),c("dayofanyweek","hpmsvtype"),c("dayID","HPMSVtypeID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID","starts","StartsCV",'isUserInput'),table_name,c("agecategory","hourday","monthofanyyear","sourceusetype","zone"),c("ageID","hourDayID","monthID","sourceTypeID","zoneID"),c("hourday","sourceusetype"),c("dayofanyweek","hpmsvtype"),c("dayID","HPMSVtypeID")), get_query_string))
+}
+
+getStartsAgeAdjustment <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="startsageadjustment"
+  if(as.integer(substr(movesdb_name, 8, 15)) < 20201105) {
+    stop(paste(table_name, " was not implemented in this version of MOVES", sep=""))
+    return(FALSE)
+  }
+  if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("ageAdjustment"),table_name,c("agecategory"),c("ageID")), get_query_string))
 }
 
 getStartsHourFraction <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="startshourfraction"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"startshourfraction")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("allocationFraction","hourID"),"startshourfraction",c("dayofanyweek","zone"),c("dayID","zoneID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  if(as.integer(substr(movesdb_name, 8, 15))  >= 20201105) {
+    return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("allocationFraction","hourID"),table_name,c("dayofanyweek","sourceusetype"),c("dayID","sourceTypeID")), get_query_string))
+  } else {
+    return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("allocationFraction","hourID"),table_name,c("dayofanyweek","zone"),c("dayID","zoneID")), get_query_string))
+  }
 }
 
 getStartsMonthAdjust <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="startsmonthadjust"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"startsmonthadjust")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("monthAdjustment"),"startsmonthadjustment",c("monthofanyyear"),c("monthID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("monthAdjustment"),table_name,c("monthofanyyear"),c("monthID")), get_query_string))
+}
+
+getStartsOpModeDistribution <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="startsopmodedistribution"
+  if(as.integer(substr(movesdb_name, 8, 15)) < 20201105) {
+    stop(paste(table_name, " was not implemented in this version of MOVES", sep=""))
+    return(FALSE)
+  }
+  if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("hourID", "opModeFraction","isUserInput"),table_name,c("dayofanyweek","sourceusetype", "agecategory"),c("dayID","sourceTypeID", "ageID")), get_query_string))
+}
+
+getStartsPerDay <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="startsperday"
+  if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  if(as.integer(substr(movesdb_name, 8, 15))  >= 20201105) {
+    return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("startsPerDay"),table_name,c("dayofanyweek","sourceusetype"),c("dayID","sourceTypeID")), get_query_string))
+  } else {
+    return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID", "startsPerDay"),table_name,c("dayofanyweek","zone"),c("dayID","zoneID")), get_query_string))
+  }
+}
+
+getStartsPerDayPerVehicle <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="startsperdaypervehicle"
+  if(as.integer(substr(movesdb_name, 8, 15)) < 20201105) {
+    stop(paste(table_name, " was not implemented in this version of MOVES", sep=""))
+    return(FALSE)
+  }
+  if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("startsPerDayPerVehicle"),table_name,c("dayofanyweek","sourceusetype"),c("dayID","sourceTypeID")), get_query_string))
 }
 
 getStartsPerYear <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="startsperyear"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"startsperyear")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("startsPerDay","yearID"),"startsperday",c("dayofanyweek","zone"),c("dayID","zoneID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("startsPerDay","yearID"),table_name,c("dayofanyweek","zone"),c("dayID","zoneID")), get_query_string))
 }
 
 getStartsSourceTypeFraction <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="startssourcetypefraction"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"startssourcetypefraction")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("allocationFraction"),"startssourcetypefraction",c("sourceusetype"),c("sourceTypeID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("allocationFraction"),table_name,c("sourceusetype"),c("sourceTypeID")), get_query_string))
 }
 
 getState <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="state"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"state")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("stateID","stateName","stateAbbr"),"state"), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  if(as.integer(substr(movesdb_name, 8, 15))  >= 20201105) {
+    return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("stateID","stateName","stateAbbr","idleRegionID"),table_name), get_query_string))
+  } else {
+    return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("stateID","stateName","stateAbbr"),table_name), get_query_string))
+  }
+}
+
+getTotalIdleFaction <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="totalidlefraction"
+  if(as.integer(substr(movesdb_name, 8, 15)) < 20201105) {
+    stop(paste(table_name, " was not implemented in this version of MOVES", sep=""))
+    return(FALSE)
+  }
+  if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("idleRegionID","minModelYearID","maxModelYearID","totalIdleFraction"),table_name,c("sourceusetype","monthofanyyear","dayofanyweek","countytype"),c("sourceTypeID","monthID","dayID","countyTypeID")), get_query_string))
 }
 
 getYear <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="year"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"year")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID","isBaseYear","fuelYearID"),"year"), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("yearID","isBaseYear","fuelYearID"),table_name), get_query_string))
 }
 
 getZone <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="zone"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"zone")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("zoneID","startAllocFactor","idleAllocFactor","SHPAllocFactor"),"zone",c("county"),c("countyID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("zoneID","startAllocFactor","idleAllocFactor","SHPAllocFactor"),table_name,c("county"),c("countyID")), get_query_string))
 }
 
 getZoneMonthHour <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="zonemonthhour"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"zonemonthhour")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("temperature","temperatureCV","relHumidity","heatIndex","specificHumidity","relativeHumidityCV","hourID"),"zonemonthhour",c("monthofanyyear","zone",),c("monthID","zoneID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("temperature","temperatureCV","relHumidity","heatIndex","specificHumidity","relativeHumidityCV","hourID"),table_name,c("monthofanyyear","zone"),c("monthID","zoneID")), get_query_string))
 }
 
 getZoneRoadType <- function(dbconn, movesdb_name, countydb_name, get_query_string=FALSE) {
+  table_name="zoneroadtype"
   if(!checkDatabase(dbconn,movesdb_name,countydb_name)) { return(FALSE) }
-  if(!checkTable(dbconn,countydb_name,"zoneroadtype")) { return(FALSE) }
-  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("SHOAllocFactor"),"zoneroadtype",c("zone","roadtype"),c("zoneID","roadTypeID")), get_query_string))
+  if(!checkTable(dbconn,countydb_name,table_name)) { return(FALSE) }
+  return (processGetQuery(dbconn, queryBuilder(movesdb_name,countydb_name,c("SHOAllocFactor"),table_name,c("zone","roadtype"),c("zoneID","roadTypeID")), get_query_string))
 }
 
 #output tables
