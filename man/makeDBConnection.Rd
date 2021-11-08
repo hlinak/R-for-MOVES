@@ -4,7 +4,13 @@
 \alias{makeDBConnection}
 \title{makeDBConnection}
 \usage{
-makeDBConnection(user, password, host = "localhost", dbapi = "MariaDB")
+makeDBConnection(
+  user,
+  password,
+  host = "localhost",
+  port = 3306,
+  dbapi = "MariaDB"
+)
 }
 \arguments{
 \item{user}{mysql user name}
