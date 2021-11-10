@@ -468,8 +468,10 @@ copyMOVESDatabase <- function(dbconn, db_from_name, db_to_name) {
             print(paste("Creating table:", table_name))
             print(paste("CREATE TABLE ",db_to_name,".",table_name," LIKE ",db_from_name,".",table_name, sep=""))
             print(paste("INSERT INTO ",db_to_name,".",table_name," SELECT * FROM ",db_from_name,".",table_name, sep=""))
-            RMariaDB::dbSendQuery(dbconn, paste("CREATE TABLE ",db_to_name,".",table_name," LIKE ",db_from_name,".",table_name, sep=""))
-            RMariaDB::dbSendQuery(dbconn, paste("INSERT INTO ",db_to_name,".",table_name," SELECT * FROM ",db_from_name,".",table_name, sep=""))
+            qres <- RMariaDB::dbSendQuery(dbconn, paste("CREATE TABLE ",db_to_name,".",table_name," LIKE ",db_from_name,".",table_name, sep=""))
+            RMariaDB::dbClearResult(qres)
+            qres <- RMariaDB::dbSendQuery(dbconn, paste("INSERT INTO ",db_to_name,".",table_name," SELECT * FROM ",db_from_name,".",table_name, sep=""))
+            RMariaDB::dbClearResult(qres)
           }
         }
         return(TRUE)
@@ -525,9 +527,11 @@ replaceMOVESTable <- function(dbconn, db_name, table_name, data) {
         dplyr::select(cols)
 
       if(as.character(attributes(dbconn)$class) == "MariaDBConnection") {
-        RMariaDB::dbSendQuery(dbconn, paste("DELETE FROM ",db_name,".",table_name, sep=""))
+        qres <- RMariaDB::dbSendQuery(dbconn, paste("DELETE FROM ",db_name,".",table_name, sep=""))
+        RMariaDB::dbClearResult(qres)
         for(row in 1:nrow(data_only_needed_columns)) {
-          RMariaDB::dbSendQuery(dbconn, paste("INSERT INTO ",db_name,".",table_name," (",paste(cols,collapse=','),") VALUES ('",paste(data_only_needed_columns[row,cols],collapse="','"),"');",sep=""))
+          qres <- RMariaDB::dbSendQuery(dbconn, paste("INSERT INTO ",db_name,".",table_name," (",paste(cols,collapse=','),") VALUES ('",paste(data_only_needed_columns[row,cols],collapse="','"),"');",sep=""))
+          RMariaDB::dbClearResult(qres)
         }
       } else {
         RMySQL::dbSendQuery(dbconn, paste("DELETE FROM ",db_name,".",table_name, sep=""))
@@ -573,8 +577,11 @@ renumberMOVESRun <- function(dbconn, outputdb_name, oldmovesrunid, newmovesrunid
             suppressWarnings(RMariaDB::dbSendQuery(dbconn, paste("update ",outputdb_name,".",table," set MOVESRunID = ", newmovesrunid, " where MOVESRunId = ", oldmovesrunid, sep='')))
           }
 
-          max_id <- suppressWarnings(RMariaDB::dbFetch(RMariaDB::dbSendQuery(dbconn, paste("SELECT MAX(MOVESRunID) FROM ",outputdb_name,".movesrun;", sep=""))))
-          suppressWarnings(RMariaDB::dbSendQuery(dbconn, paste("ALTER TABLE ",outputdb_name,".movesrun AUTO_INCREMENT = ",as.character(as.integer(max_id[1][1])+1), sep="")))
+          qres <- RMariaDB::dbSendQuery(dbconn, paste("SELECT MAX(MOVESRunID) FROM ",outputdb_name,".movesrun;", sep=""))
+          max_id <- suppressWarnings(RMariaDB::dbFetch(qres))
+          RMariaDB::dbClearResult(qres)
+          qres <- RMariaDB::dbSendQuery(dbconn, paste("ALTER TABLE ",outputdb_name,".movesrun AUTO_INCREMENT = ",as.character(as.integer(max_id[1][1])+1), sep=""))
+          RMariaDB::dbClearResult(qres)
           return(TRUE)
         } else {
           stop(paste("There is MOVESRunID alread at:", newmovesrunid, sep=""))

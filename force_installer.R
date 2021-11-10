@@ -1,3 +1,4 @@
-setwd('C:\\Users\\joseph.jakuta\\Documents\\r4moves')
+setwd('C:\\Users\\joseph.jakuta\\Documents\\GitHub\\r4moves')
 devtools::document()
 devtools::install()
+
