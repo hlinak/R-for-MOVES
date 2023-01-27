@@ -812,6 +812,7 @@ getMOVESOutputTable <- function(dbconn, movesdb_name, outputdb_name, table_name,
   if(table_name == "baserateoutput") { return(getBaseRateOutput(dbconn, movesdb_name, outputdb_name, get_query_string, moves_run_id)) }
   if(table_name == "baserateunits") { return(getBaseRateUnits(dbconn, movesdb_name, outputdb_name, get_query_string, moves_run_id)) }
   if(table_name == "movesactivity") { return(getMOVESActivityOutput(dbconn, movesdb_name, outputdb_name, get_query_string, moves_run_id)) }
+  if(table_name == "movesactivityoutput") { return(getMOVESActivityOutput(dbconn, movesdb_name, outputdb_name, get_query_string, moves_run_id)) }
   if(table_name == "moveserror") { return(getMOVESError(dbconn, movesdb_name, outputdb_name, get_query_string, moves_run_id)) }
   if(table_name == "moveseventlog") { return(getMOVESEventLog(dbconn, movesdb_name, outputdb_name, get_query_string, moves_run_id)) }
   if(table_name == "movesoutput") { return(getMOVESOutput(dbconn, movesdb_name, outputdb_name, get_query_string, moves_run_id)) }
